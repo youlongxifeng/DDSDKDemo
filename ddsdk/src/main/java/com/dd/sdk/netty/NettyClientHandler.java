@@ -3,6 +3,15 @@ package com.dd.sdk.netty;
 import android.util.Base64;
 import android.util.Log;
 
+import com.dd.sdk.BuildConfig;
+import com.dd.sdk.common.DeviceInformation;
+import com.dd.sdk.tools.LogUtils;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -18,7 +27,7 @@ import io.netty.handler.timeout.IdleStateEvent;
  */
 
 public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
-
+    private final static String TAG=NettyClientHandler.class.getSimpleName();
     private NettyListener listener;
 
     public NettyClientHandler(NettyListener listener) {
@@ -35,15 +44,22 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
-            Log.i("EEE", "userEventTriggered=" + e.state());
+            Log.i(TAG, "userEventTriggered=" + e.state());
             switch (e.state()) {
                 case WRITER_IDLE:
-                    final String msg = String.format(
-                            "{\"guid\":\"%s\",\"cmd\":\"heart_beat\",\"version\":\"%s\"}", "DDD4001708-05946", "5.8.501.0");
+                   /* final String msg = String.format(
+                            "{\"guid\":\"%s\",\"cmd\":\"heart_beat\",\"version\":\"%s\"}", "DDD4001708-05946", "5.8.501.0");*/
+                    Map<String, String> params = new HashMap<>();
+                    params.put("guid", DeviceInformation.getInstance().getGuid());
+                    params.put("cmd", "heart_beat");
+                    params.put("version", BuildConfig.VERSION_NAME);
+                    JSONObject jsonObject=new JSONObject(params);
+                    String msg=jsonObject.toString();
+                    LogUtils.i(TAG, "send ping to server----------msg="+msg);
                     byte[] data = Base64.encode((msg).getBytes(), Base64.DEFAULT);
                     String str = new String(data) + "*" + System.getProperty("line.separator");
                     ctx.writeAndFlush(str);
-                    Log.i("EEE", "send ping to server----------");
+
                     break;
                 case READER_IDLE:
                     break;
@@ -64,10 +80,10 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String s) throws Exception {
-        byte[] b = new byte[1024 * 7];
         byte[] data = Base64.decode(s.getBytes(), Base64.DEFAULT);
         String str = new String(data);
-        Log.i("EEE", "收到服务端消息：----------s=" + str);
+        Log.i(TAG, "收到服务端消息：----------s=" + str);
+        listener.onMessageResponse(str);
     }
 
     /**
@@ -80,7 +96,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);
-        Log.e("EEE", "exceptionCaught  cause=" + cause.getMessage());
+        Log.e(TAG, "exceptionCaught  cause=" + cause.getMessage());
     }
 
 
@@ -93,7 +109,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Log.e("EEE", "channelActive  连接成功");
+        Log.e(TAG, "channelActive  连接成功");
         //        NettyClient.getInstance().setConnectStatus(true);
 
     }
@@ -106,7 +122,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Log.e("EEE", "channelInactive  出现问题需要重连ctx=" + ctx.name());
+        Log.e(TAG, "channelInactive  出现问题需要重连ctx=" + ctx.name());
         //        NettyClient.getInstance().setConnectStatus(false);
         listener.onServiceStatusConnectChanged(NettyListener.STATUS_CONNECT_CLOSED);
         //   NettyClient.getInstance().reconnect();

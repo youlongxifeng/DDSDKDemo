@@ -28,7 +28,10 @@ public class DDApplication extends Application implements InstructionListener {
     @Override
     public void onCreate() {
         super.onCreate();
-        DDSDK.init(this, "BOX_GZ_00001", "1b39ab32553f82ea03aa3b5e23af85c8", "DDD4001708-05946", "test.swoole.doordu.com", 9501, this);
+
+        DDSDK.init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "DDD4001708-05946", "10.0.2.152", 8888, this);
+
+        DDSDK.bindService(this);
     }
 
     /**
@@ -131,7 +134,7 @@ public class DDApplication extends Application implements InstructionListener {
 
     @Override
     public ResultBean tokenFile() {//重新获取token信息
-        DDSDK.init(this, "", "", "DDD4001708-05946", "test.swoole.doordu.com", 9501, this);
+        DDSDK.init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "DDD4001708-05946", "test.swoole.doordu.com", 9501, this);
         return new ResultBean();
     }
 

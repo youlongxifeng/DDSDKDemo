@@ -14,9 +14,10 @@ public class DeviceInformation {
     private String mGuid;//设备id
     private String mVersion;//版本号
 
-    private final static DeviceInformation mInstance = new DeviceInformation();
+    private   static DeviceInformation mInstance = new DeviceInformation();
 
     public static DeviceInformation getInstance() {
+
         return mInstance;
     }
     public String getGuid() {

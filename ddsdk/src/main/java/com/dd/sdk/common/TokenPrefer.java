@@ -26,8 +26,11 @@ public class TokenPrefer {
      */
     public static void loadConfig(Context context, AccessToken info) {
         SharedPreferences share = context.getSharedPreferences("token_prefer", 0);
-        info.token   = share.getString("access_token", "");
-        info.expires_in   = share.getString("access_token", "");
+        if(info!=null){
+            info.token   = share.getString("access_token", "");
+            info.expires_in   = share.getString("access_token", "");
+        }
+
     }
 
     /**
@@ -36,11 +39,12 @@ public class TokenPrefer {
      * @param info
      */
     public static void saveConfig(Context context, final AccessToken info) {
+        if(info!=null){
         SharedPreferences share = context.getSharedPreferences("token_prefer", 0);
         Editor editor = share.edit();
         editor.putString("access_token", info.getToken());
         editor.putString("expires_in", info.getExpires_in());
-        editor.commit();
+        editor.commit();}
     }
 
 }

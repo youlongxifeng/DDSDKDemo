@@ -33,4 +33,13 @@ public class BaseResponse<T> {
     public void setData(T data) {
         this.data = data;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BaseResponse{");
+        sb.append("code=").append(code);
+        sb.append(", data=").append(data);
+        sb.append('}');
+        return sb.toString();
+    }
 }

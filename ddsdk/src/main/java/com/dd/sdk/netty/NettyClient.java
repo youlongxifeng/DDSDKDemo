@@ -1,5 +1,7 @@
 package com.dd.sdk.netty;
 
+import android.util.Log;
+
 import java.nio.charset.Charset;
 
 import io.netty.bootstrap.Bootstrap;
@@ -27,6 +29,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 
 public class NettyClient {
+    private final static String TAG=NettyClient.class.getSimpleName();
     private NettyListener listener;
     private int port;//端口
     private String host;//域名
@@ -35,16 +38,17 @@ public class NettyClient {
 
     public NettyClient(NettyListener nettyListener, int port, String host) {
         this.listener = nettyListener;
-        this.port = port;
-        this.host = host;
-
+      /*  this.port = port;
+        this.host = host;*/
+        this.port = 9501;
+        this.host = "test.swoole.doordu.com";
+        Log.i(TAG,"connect===port="+port+"   host="+host);
     }
 
     /**
      * 开始连接
      */
     public void connect() {
-
         EventLoopGroup eventLoopGroup;
         try {
             eventLoopGroup = new NioEventLoopGroup();
@@ -72,6 +76,7 @@ public class NettyClient {
 
         } catch (Exception e) {
             e.printStackTrace();
+            Log.i(TAG,"connect===e="+e);
         } finally {
 
         }
@@ -86,6 +91,7 @@ public class NettyClient {
         ChannelFutureListener channelFutureListener = new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                Log.i(TAG,"channelFuture===="+channelFuture.isSuccess());
                 if (channelFuture.isSuccess()) {
                     socketChannel = (SocketChannel) channelFuture.channel();
                 } else {
@@ -107,6 +113,14 @@ public class NettyClient {
             }
         }
         connect();
+    }
+
+    public void close() {
+        if (channelFuture != null) {
+            if (channelFuture.channel() != null && channelFuture.channel().isOpen()) {
+                channelFuture.channel().close();
+            }
+        }
     }
 
     /**
