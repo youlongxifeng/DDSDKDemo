@@ -19,7 +19,7 @@ import com.dd.sdk.service.MainService;
 public class NetworkState implements Runnable {
     private Context mContext;
 
-    public NetworkState(Application context) {
+    public NetworkState(Context context) {
         mContext = context;
         /*   mNetState = NETWORK_UNKNOW;
         SipConnTime = SystemClock.elapsedRealtime();
@@ -35,8 +35,10 @@ public class NetworkState implements Runnable {
      * 释放资源
      */
     public void release() {
-        Intent intent = new Intent(mContext, MainService.class);
-        intent.putExtra("data", true);
-        mContext.stopService(intent);
+        if (mContext != null) {
+            Intent intent = new Intent(mContext, MainService.class);
+            intent.putExtra("data", true);
+            mContext.stopService(intent);
+        }
     }
 }

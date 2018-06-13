@@ -1,19 +1,25 @@
 package com.dd.sdk.service;
 
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
+import android.os.Handler;
+import android.os.Handler.Callback;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.netty.NettyClient;
 import com.dd.sdk.netty.NettyListener;
 import com.dd.sdk.tools.LogUtils;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -26,16 +32,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @class describe
  */
 
-public class MainService extends Service implements NettyListener {
+public class MainService extends Service implements NettyListener, Callback {
     private final static String TAG = MainService.class.getSimpleName();
+    private final static int QUERY_PROCESS_SURVIVING = 1;
+    public final static String CONFIG_BEAN = "config_bean";
+    public final static String PACKAGE_NAME = "package_name";
     CopyOnWriteArrayList<String> copyOnWriteArrayList = new CopyOnWriteArrayList<>();
     ListenerManagerImpl mListenerManager;
     NettyClient mNettyClient;
+    private String mPacageName = null;
+    HandlerThread mHandlerThread;
+    Handler mMainHandler;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        LogUtils.init(null,true,true);
+        LogUtils.init(null, true, true);
         mListenerManager = new ListenerManagerImpl();
         Log.i(TAG, "======onCreate=====");
     }
@@ -43,19 +55,25 @@ public class MainService extends Service implements NettyListener {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        if (mNettyClient != null) {
+        /*if (mNettyClient != null) {
             mNettyClient.close();
             mNettyClient = null;
         }
         Bundle bundle = intent.getExtras();
         NetConfig netConfig = (NetConfig) bundle.getSerializable(NetConfig.CONFIG_BEAN);
+        mPacageName = bundle.getString(MainService.PACKAGE_NAME);
         if (netConfig != null) {
             mNettyClient = new NettyClient(this, netConfig.getdPort(), netConfig.getDomain());
             mNettyClient.connect();
-        }else{
+        } else {
 
         }
-        Log.i(TAG, "======onBind=====netConfig="+netConfig);
+        mHandlerThread = new HandlerThread("DDService");
+        mHandlerThread.setDaemon(true);
+        mHandlerThread.start();
+        mMainHandler = new Handler(mHandlerThread.getLooper(), this);
+        mMainHandler.sendEmptyMessage(QUERY_PROCESS_SURVIVING);*/
+        Log.i(TAG, "======onBind=====netConfig="  );
         return (IBinder) mBundle;
     }
 
@@ -82,12 +100,18 @@ public class MainService extends Service implements NettyListener {
     public void onServiceStatusConnectChanged(int statusCode) {
 
         try {
-            Log.i(TAG, "======onMessageResponse=====statusCode="+statusCode);
+            Log.i(TAG, "======onMessageResponse=====statusCode=" + statusCode);
             mBundle.onServiceStatusConnectChanged(statusCode);
             mNettyClient.reconnect();
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "======ononUnbind======");
+        return super.onUnbind(intent);
     }
 
     @Override
@@ -112,13 +136,45 @@ public class MainService extends Service implements NettyListener {
 
         @Override
         public void registerListener(IOnCommandListener listener) throws RemoteException {
-            LogUtils.i(TAG,"registerListener================");
-         mListenerManager.registerListener(listener);
+            LogUtils.i(TAG, "registerListener================");
+            mListenerManager.registerListener(listener);
         }
 
         @Override
         public void unRegisterListener(IOnCommandListener listener) throws RemoteException {
-           mListenerManager.unRegisterListener(listener);
+            LogUtils.i(TAG, "unRegisterListener================");
+            mListenerManager.unRegisterListener(listener);
         }
     };
+
+    /**
+     * 轮训当前线程是否还活着
+     */
+    private void querySpecailPIDRunningAppInfo() {
+        //获得ActivityManager服务的对象
+        ActivityManager mActivityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        List<RunningAppProcessInfo> listOfProcesses = mActivityManager.getRunningAppProcesses();
+        for (ActivityManager.RunningAppProcessInfo process : listOfProcesses) {
+            LogUtils.e("Process Running :" + process.processName + "  listOfProcesses=" + listOfProcesses.size());
+            if (mPacageName != null && !process.processName.contains(mPacageName)) {
+
+            } else {
+
+            }
+        }
+        //mMainHandler.sendEmptyMessageAtTime(QUERY_PROCESS_SURVIVING, 500);
+    }
+
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        switch (msg.what) {
+            case QUERY_PROCESS_SURVIVING:
+               // querySpecailPIDRunningAppInfo();
+                break;
+            default:
+                break;
+        }
+        return false;
+    }
 }

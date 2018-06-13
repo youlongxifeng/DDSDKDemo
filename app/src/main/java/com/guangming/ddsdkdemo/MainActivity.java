@@ -8,7 +8,10 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.view.View.OnClickListener;
 
+import com.dd.sdk.DDSDK;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.service.ICommandManager;
 import com.dd.sdk.service.IOnCommandListener;
@@ -24,19 +27,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         this.mContext = this;
-        // bindService();
-        LogUtils.init(null, true, true);
-        LogUtils.i("");
+         LogUtils.init(null,true,true);
+         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
+             @Override
+             public void onClick(View v) {
+                 DDApplication.unbindService();
+             }
+         });
 
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LogUtils.i("unbindService==onStop=");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (serviceConnection != null) {
-            unbindService(serviceConnection);
-        }
-
+        LogUtils.i("unbindService==Destroy=");
+        DDSDK.release(this.getApplication());
     }
 
     /**

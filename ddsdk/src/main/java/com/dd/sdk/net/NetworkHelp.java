@@ -5,9 +5,8 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 
 import com.android.volley.Request;
+import com.android.volley.Request.Method;
 import com.android.volley.Response;
-import com.android.volley.Response.ErrorListener;
-import com.android.volley.Response.Listener;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.dd.sdk.BuildConfig;
 import com.dd.sdk.DDSDK;
@@ -15,8 +14,7 @@ import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.netbean.AccessToken;
-import com.dd.sdk.netbean.BaseResponse;
-import com.dd.sdk.netbean.DoorConfig;
+import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.tools.LogUtils;
 
 import org.json.JSONObject;
@@ -62,7 +60,7 @@ public class NetworkHelp {
         Map<String, String> params = new HashMap<String, String>();
         params.put("appid", appid);
         params.put("secret", secret);
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.getDomainName(DDSDK.netConfig, NetConfig.TOKEN), new JSONObject(params), listener, errlistener);
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.TOKEN), new JSONObject(params), listener, errlistener);
         DDSDK.addRequestQueue(request);
     }
     /**
@@ -79,8 +77,7 @@ public class NetworkHelp {
                                          Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
         Map<String, String> params = new HashMap<>();
         final DisplayMetrics res = context.getResources().getDisplayMetrics();
-        AccessToken accessToken = new AccessToken();
-        TokenPrefer.loadConfig(context, accessToken);
+        AccessToken accessToken = TokenPrefer.loadConfig(context);
         params.put("token", accessToken.getToken());
         params.put("guid", DeviceInformation.getInstance().getGuid());
         params.put("width", String.valueOf(res.widthPixels));
@@ -89,7 +86,7 @@ public class NetworkHelp {
         params.put("mac", macAddress);
         params.put("mobile", mobile);
         LogUtils.i(TAG, "getRegisterDevice" + new JSONObject(params).toString());
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.getDomainName(DDSDK.netConfig, NetConfig.REGISTER), new JSONObject(params), listener, errlistener);
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.REGISTER), new JSONObject(params), listener, errlistener);
         DDSDK.addRequestQueue(request);
 
     }
@@ -98,26 +95,36 @@ public class NetworkHelp {
      * 程序启动时获取新配置
      * https://door.api.doordu.com/api/index.php/door/config?guid=DDD4001708-05946&version=1.0&timetoken=3&vcode=1&signkey=886595bc32b5c0df21cc0df75cb2492ec514050b     type=com.dd.sdk.netbean.BaseGsonClass<com.dd.sdk.netbean.DoorConfig2>
      */
-    public static void getConfig(String guid, String door_ver, Listener<BaseResponse<DoorConfig>> listener,
-                                 ErrorListener error, String token) {
-       /* StringBuilder builder = new StringBuilder();
-        NetConfig config = NetConfig.getAddress();
-        builder.append("/v1/config/?");
+    public static void getConfig(Context context, String guid, String door_ver, Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
+        AccessToken accessToken = TokenPrefer.loadConfig(context);
+        StringBuilder builder = new StringBuilder();
+        builder.append("token").append(se).append(accessToken.getToken()).append(sc);
         builder.append("guid").append(se).append(guid).append(sc);
-        builder.append("door_ver").append(se).append(door_ver).append(sc);
-        builder.append("token=").append(token);
-        Sign.sign(builder);
-        Type t = new TypeToken<BaseResponse<DoorConfig>>() {
-        }.getType();
-        GsonTypeRequest<BaseResponse<DoorConfig>> r = GsonTypeRequest.newRequest(config.getHttpUrl()
-                + builder.toString(), t, listener, error);
-        r.setRetryPolicy(Volley.getDefaultRetryPolicy(5000, 3, 2f));
-        r.setToken(token);
-        r.setShouldCache(false);
+        builder.append("door_ver").append(se).append(door_ver);
 
 
-        DDSDK.addRequestQueue(r);*/
+        LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.CONFIG) + builder.toString());
+        JsonObjectRequest request = new JsonObjectRequest(Method.GET, NetConfig.getDomainName(DDSDK.netConfig, NetConfig.CONFIG) + builder.toString(), listener, errlistener);
+        DDSDK.addRequestQueue(request);
     }
+
+    /**
+     * 上报配置信息
+     *
+     * @param context
+     * @param guid
+     * @param config
+     * @param listener
+     * @param errlistener
+     */
+    public static void postConfig(Context context, String guid, UpdoorconfigBean config, Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
+        AccessToken accessToken = TokenPrefer.loadConfig(context);
+        Map<String, String> params = new HashMap<>();
+        LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.UPDATE_CONFIG));
+        JsonObjectRequest request = new JsonObjectRequest(Method.GET, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.UPDATE_CONFIG), new JSONObject(params), listener, errlistener);
+        DDSDK.addRequestQueue(request);
+    }
+
 
     private final static void builderGeneral(StringBuilder builder) {
         builder.append("device_type").append(se).append("1"/*Device.deviceType*/).append(sc);

@@ -171,10 +171,10 @@ public class AppUtils {
      * 根据Pid获取当前进程的名字，一般就是当前app的包名
      *
      * @param context 上下文
-     * @param pid     进程的id
      * @return 返回进程的名字
      */
-    public static String getAppName(Context context, int pid) {
+    public static String getAppName(Context context) {
+        int pid = android.os.Process.myPid();
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List list = activityManager.getRunningAppProcesses();
         Iterator i = list.iterator();
@@ -190,6 +190,24 @@ public class AppUtils {
             }
         }
         // 没有匹配的项，返回为null
+        return null;
+    }
+
+    /**
+     * [获取应用程序版本名称信息]
+     *
+     * @param context
+     * @return 当前应用的版本名称
+     */
+    public static synchronized String getPackageName(Context context) {
+        try {
+            PackageManager packageManager = context.getPackageManager();
+            PackageInfo packageInfo = packageManager.getPackageInfo(
+                    context.getPackageName(), 0);
+            return packageInfo.packageName;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 }

@@ -16,9 +16,11 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />
     <application>
-        <!--   -->
+        <!--   android:process=":serviceProcess" -->
         <service android:name="com.dd.sdk.service.MainService"
-                 android:process=":serviceProcess"
+                 android:enabled="true"
+                 android:exported="true"
+                 android:process=":remote"
              />
     </application>
 </manifest>

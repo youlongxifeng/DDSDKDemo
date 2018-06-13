@@ -12,7 +12,6 @@ import android.os.RemoteException;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
@@ -27,6 +26,7 @@ import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
+import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.service.ICommandManager;
@@ -107,15 +107,13 @@ public class DDSDK {
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
+            LogUtils.i("onServiceConnected===" + (mContext != null) + "  name=" + name);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            try {
-                mICommandManager.unRegisterListener(mIOnCommandListener);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+            LogUtils.i("unbindService===" + (mContext != null) + "  name=" + name);
+
         }
 
         @Override
@@ -127,7 +125,7 @@ public class DDSDK {
     private static IOnCommandListener mIOnCommandListener = new IOnCommandListener.Stub() {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {
-            //  LogUtilsUtils.i(TAG, "onMessageResponse 处理来自服务器端下发给客户端的指令 MSG=" + msg);
+            LogUtils.i(TAG, "onMessageResponse MSG=" + msg);
         }
 
         @Override
@@ -160,21 +158,21 @@ public class DDSDK {
      * @param deviceID    设备id
      * @param listener    回调监听
      */
-    public static void init(final Application application, final String app_id, final String secret_key, final String deviceID, String domainName, int port, final InstructionListener listener) {
-        mContext = application;
+    public static void init(final Context application, final String app_id, final String secret_key, final String deviceID, String domainName, int port, final InstructionListener listener) {
+       mContext = application;
         LogUtils.init(null, true, true);
         mInstructionListener = listener;
         mNetWorkRequest = Volley.newRequestQueue(application);
         mNetworkState = new NetworkState(application);
 
-        TokenPrefer.loadConfig(application, accessToken);
+        TokenPrefer.loadConfig(application);
         DeviceInformation.getInstance().setGuid(deviceID);
         netConfig = new NetConfig();
         netConfig.setdPort(port);
         netConfig.setDomain(domainName);
         LogUtils.i(TAG, "init   app_id=" + app_id + "  secret_key=" + secret_key + " deviceID=" + deviceID + "  domainName=" + domainName);
 
-        NetworkHelp.getAccessToken(app_id, secret_key, new Listener<JSONObject>() {
+        NetworkHelp.getAccessToken(app_id, secret_key, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject object) {
 
@@ -186,10 +184,9 @@ public class DDSDK {
                     response = GsonUtils.getObject(object.toString(), t, response);
                     LogUtils.i(TAG, "init onResponse  response==" + response);
                     if (response.isSuccess()) {
-                        accessToken = GsonUtils.getObject(response.data.toString(), AccessToken.class);
-                        ;
+                        accessToken = response.data;// GsonUtils.getObject(response.data.toString(), AccessToken.class);
                         TokenPrefer.saveConfig(mContext, accessToken);
-                        RegisterDevice(application, AppUtils.getIpAddress(application), "");
+                        RegisterDevice(application, AppUtils.getIpAddress(application), "13787138669");
                     } else {
                         if (mInstructionListener != null) {
                             mInstructionListener.noBinding();
@@ -203,7 +200,7 @@ public class DDSDK {
 
 
             }
-        }, new ErrorListener() {
+        }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
@@ -216,22 +213,24 @@ public class DDSDK {
             }
         });
 
-
+         bindService(mContext);
     }
 
     /**
      * 绑定服务
      */
     public static void bindService(Context mContext) {
-        int pid = android.os.Process.myPid();
-        String processAppName = AppUtils.getAppName(mContext, pid);
         Intent intent = new Intent(mContext, MainService.class);
+       String processAppName = AppUtils.getAppName(mContext);
+        String pagename = AppUtils.getPackageName(mContext);
+
         Bundle bundle = new Bundle();
-        bundle.putSerializable(NetConfig.CONFIG_BEAN, netConfig);
+        bundle.putSerializable(MainService.CONFIG_BEAN, netConfig);
+        bundle.putSerializable(MainService.PACKAGE_NAME, pagename);
         intent.putExtras(bundle);
         mContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         if (mContext != null) {
-            LogUtils.i("bindService  mContext=" + mContext.getClass().getName() + "  processAppName=" + processAppName+" pid="+pid);
+            LogUtils.i("bindService  mContext=" + mContext.getClass().getName()  );
         } else {
             LogUtils.i("bindService ");
         }
@@ -241,21 +240,44 @@ public class DDSDK {
     /**
      * 解绑服务
      */
-    private static void unbindService() {
-        if (mContext != null) {
-            mContext.unbindService(serviceConnection);
+    public static void unbindService(Context context) {
+        LogUtils.i("unbindService===" + (mContext != null) + "  =" + (mICommandManager != null));
+        try {
+            if (mICommandManager != null) {
+                mICommandManager.unRegisterListener(mIOnCommandListener);
+            }
+            if (mContext != null) {
+                mContext.unbindService(serviceConnection);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
+
     }
 
 
     /**
      * 设备注册检查,如果没有注册则注册设备
      */
-    private static void RegisterDevice(Context context, String macAddress, String mobile) {
+    private static void RegisterDevice(final Context context, String macAddress, String mobile) {
         NetworkHelp.getRegisterDevice(context, macAddress, mobile, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + response);
+                Type t = new TypeToken<BaseResponse>() {
+                }.getType();
+                RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
+
+                switch (baseResponse.code) {
+                    case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
+                        getConfig(context, DeviceInformation.getInstance().getGuid(), "5000");
+                        return;
+                    case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
+                        break;
+                    case RegisterResponse.ALREADY_REGISTERED://20012设备已注册
+                        break;
+                }
+
             }
         }, new Response.ErrorListener() {
             @Override
@@ -270,23 +292,40 @@ public class DDSDK {
      * @param guid     设备唯一标识符
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
-    public static void getConfig(String guid, String door_ver) {
-        NetworkHelp.getConfig(DeviceInformation.getInstance().getGuid(), "0", new Listener<BaseResponse<DoorConfig>>() {
+    public static void getConfig(Context context, String guid, String door_ver) {
+        NetworkHelp.getConfig(context, DeviceInformation.getInstance().getGuid(), "5000", new Response.Listener<JSONObject>() {
                     @Override
-                    public void onResponse(BaseResponse<DoorConfig> response) {
-                        LogUtils.i("EEE", "getConfig  response==" + response);
-                        if (response != null && response.isSuccess()) {
-                            DoorConfig doorConfig2s = response.getData();
-                            new Thread(mNetworkState).start();
+                    public void onResponse(JSONObject response) {
+                        LogUtils.i(TAG, "getConfig  response==" + response);
+                        BaseResponse<DoorConfig> baseResponse = new BaseResponse<>();
+                        Type t = new TypeToken<BaseResponse<DoorConfig>>() {
+                        }.getType();
+                        BaseResponse<DoorConfig> response1 = GsonUtils.getObject(response.toString(), t, baseResponse);
+                        LogUtils.i(TAG, "getConfig  response1==" + response1);
+                        if (response1 != null) {
+                            switch (baseResponse.code) {
+                                case RegisterResponse.RESPONSE_SUCCESS://返回成功
+                                    DoorConfig deviceConfig = response1.getData();
+                                    mInstructionListener.getconfig(deviceConfig);
+                                    LogUtils.i(TAG, "getConfig  deviceConfig==" + deviceConfig);
+                                    return;
+                                case RegisterResponse.NO_REGISTER://20011	设备未注册
+                                    break;
+                                case RegisterResponse.NO_BOUND://20012设备w未绑定
+                                    break;
+                            }
+                        } else {
+                            //需要做后续处理
                         }
+
                     }
                 },
-                new ErrorListener() {
+                new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         LogUtils.i("EEE", "getConfig error==" + error);
                     }
-                }, accessToken.getToken());
+                });
 
     }
 
@@ -298,7 +337,17 @@ public class DDSDK {
      * @param config json对象	配置内容
      */
     public static void postDeviceConfig(String guid, UpdoorconfigBean config) {
+        NetworkHelp.postConfig(mContext, guid, config, new Response.Listener<JSONObject>() {
+            @Override
+            public void onResponse(JSONObject response) {
 
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
     }
 
 
@@ -307,10 +356,10 @@ public class DDSDK {
      */
     public static void release(Application application) {
         if (null != mNetworkState) {
-            mNetworkState.release();
+            //mNetworkState.release();
             mNetworkState = null;
         }
-        unbindService();
+        unbindService(mContext);
     }
 
     /**

@@ -47,6 +47,7 @@ public class GsonUtils {
             Gson gson = new Gson();
             t = gson.fromJson(jsonString, type);
         } catch (Exception e) {
+            LogUtils.i("getObject=="+e);
         }
         return t;
     }

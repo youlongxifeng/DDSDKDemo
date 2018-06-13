@@ -12,36 +12,37 @@ import java.io.Serializable;
  * @class describe
  */
 
-public class NetConfig implements Serializable{
+public class NetConfig implements Serializable {
+
     /**
      * 访问接口时需调用此接口获取访问凭证token。为避免额外消耗，请访问者在本地保存返回的token值。
      */
-    public final static String TOKEN="/v1/token";
+    public final static String TOKEN = "/v1/token";
     /**
      * 设置注册接口。如果设备已注册，直接返回成功。
      */
-    public final static String REGISTER="/v1/device/register";
+    public final static String REGISTER = "/v1/device/register";
     /**
      * 获取配置信息，门禁机每次启动时应当请求一次
      */
-    public final static String CONFIG="/v1/config";
+    public final static String CONFIG = "/v1/config?";
     /**
-     *门禁机上传配置
+     * 门禁机上传配置
      */
-    public final static String UPDATE_CONFIG="/v1/config/update";
+    public final static String UPDATE_CONFIG = "/v1/config/update";
     /**
      * 获取门禁卡列表
      */
-    public final static String GET_CARD="/v1/device/card";
+    public final static String GET_CARD = "/v1/device/card?";
     /**
      * 上报访客留影
      */
-    public final static String VISITLOG="/v1/device/visitlog";
+    public final static String VISITLOG = "/v1/device/visitlog";
     /**
      * 上报视频留影
      */
-    public final static String VIDEOLOG="/v1/device/videolog";
-    public final static String CONFIG_BEAN="config_bean";
+    public final static String VIDEOLOG = "/v1/device/videolog";
+    public final static String CONFIG_BEAN = "config_bean";
     private String ip = "10.0.0.243";                                      // 测试服务器的IP
     private String domain = "10.0.0.243";
     private String httpUrl = "http://10.0.2.152:8888?"; // 测试服务器通信的url
@@ -81,8 +82,6 @@ public class NetConfig implements Serializable{
     }
 
 
-
-
     @Override
     public String toString() {
         return String.format("ip %s, url %s", ip, httpUrl);
@@ -101,7 +100,15 @@ public class NetConfig implements Serializable{
     }
 
 
-    public  static String  getDomainName(NetConfig c,String catalog){
-        return "http://"+ c.getDomain()+":"+c.getdPort()+catalog;
+    public static String postDomainName(NetConfig c, String catalog) {
+        return "http://" + c.getDomain() + ":" + c.getdPort() + catalog;
+    }
+
+    public static String getDomainName(NetConfig c, String config) {
+        if (c!=null&&c.getDomain().startsWith("http://")) {//如果前缀包含
+            return   c.getDomain() + ":" + c.getdPort() + config;
+        } else {
+            return "http://" + c.getDomain() + ":" + c.getdPort() + config;
+        }
     }
 }

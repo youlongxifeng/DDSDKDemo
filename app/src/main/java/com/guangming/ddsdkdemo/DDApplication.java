@@ -1,11 +1,14 @@
 package com.guangming.ddsdkdemo;
 
 import android.app.Application;
+import android.content.Context;
+import android.util.DisplayMetrics;
 
 import com.dd.sdk.DDSDK;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
 import com.dd.sdk.netbean.CardInfo;
+import com.dd.sdk.netbean.DeviceInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
 import com.dd.sdk.netbean.RandomPwd;
@@ -25,13 +28,19 @@ import java.util.List;
  */
 
 public class DDApplication extends Application implements InstructionListener {
+    private static Context mContext;
+
     @Override
     public void onCreate() {
         super.onCreate();
+        mContext=this;
+        DDSDK.init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
 
-        DDSDK.init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "DDD4001708-05946", "10.0.2.152", 8888, this);
 
-        DDSDK.bindService(this);
+    }
+
+    public static void unbindService(){
+        DDSDK.unbindService(mContext);
     }
 
     /**
@@ -50,8 +59,32 @@ public class DDApplication extends Application implements InstructionListener {
      */
     @Override
     public ResultBean getconfig(DoorConfig doorConfig) {
+        UpdoorconfigBean updoorconfigBean= new UpdoorconfigBean();
+        final DisplayMetrics res =  getResources().getDisplayMetrics();
+        updoorconfigBean.setVideosize( "1");
+        updoorconfigBean.setSize_wxh(String.valueOf(res.widthPixels)+"*"+String.valueOf(res.heightPixels));
+        updoorconfigBean.setMode("test20160822001");
+        DeviceInfo deviceInfo=new DeviceInfo();
+        deviceInfo.setName("雅新东路41号");
+        deviceInfo.setType(1);
+        deviceInfo.setUid("test20160822001");
+        deviceInfo.setVer("5.8.395.0");
+        deviceInfo.setVercode(583950);
+        updoorconfigBean.setDevice(deviceInfo);
+        updoorconfigBean.setFace_detect(1);
+        updoorconfigBean.setMicphoneGain(0);
+        updoorconfigBean.setDisable_m1_card(0);
+        updoorconfigBean.setNetType(0);
+        updoorconfigBean.setOpenflag(0);
+        updoorconfigBean.setCallvolume(0);
+        updoorconfigBean.setSpeakerGain(0);
+        updoorconfigBean.setTotp(0);
+        updoorconfigBean.setAdvolume(0);
+        updoorconfigBean.setBluetooth_open_door(1);
+
+
         //上报配置内容
-        DDSDK.postDeviceConfig("guid", new UpdoorconfigBean());
+        DDSDK.postDeviceConfig("test20160822001",updoorconfigBean );
         return new ResultBean();
     }
     /**
