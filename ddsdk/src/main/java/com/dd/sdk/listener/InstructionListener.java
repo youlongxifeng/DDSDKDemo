@@ -3,7 +3,8 @@ package com.dd.sdk.listener;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
-import com.dd.sdk.netbean.RandomPwd;
+import com.dd.sdk.netbean.OpenDoorPwd;
+import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public interface InstructionListener {
     /**
      * 开门指令   处理开门指令，并上报给应用层，等待应用层返回处理结果，回包给ddconnector
      */
-    ResultBean openDoor(int openDoorType,String describe);
+    ResultBean openDoor(RequestOpenDoor openDoor);
 
 
 
@@ -58,10 +59,16 @@ public interface InstructionListener {
     /**
      * 网络密码指令    处理密码指令，并上报给应用层，等待应用层返回接收结果，回包给ddconnector
      */
-    ResultBean getNetworkCipher(RandomPwd  pwd);
+    ResultBean getNetworkCipher(OpenDoorPwd pwd);
 
     /**
      * token失败重新初始化
      */
     ResultBean tokenFile();
+
+
+    /**
+     * 获取当前黑白名单curid当前操作步数，也就是本地数据库存储的黑白名单位数
+     */
+    int nameListCurid();
 }

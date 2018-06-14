@@ -4,7 +4,6 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.dd.sdk.BuildConfig;
-import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.tools.LogUtils;
 
 import org.json.JSONObject;
@@ -29,8 +28,10 @@ import io.netty.handler.timeout.IdleStateEvent;
 public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
     private final static String TAG=NettyClientHandler.class.getSimpleName();
     private NettyListener listener;
+    private String mGuid;
 
-    public NettyClientHandler(NettyListener listener) {
+    public NettyClientHandler(String guid,NettyListener listener) {
+        this.mGuid=guid;
         this.listener = listener;
     }
 
@@ -50,7 +51,7 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
                    /* final String msg = String.format(
                             "{\"guid\":\"%s\",\"cmd\":\"heart_beat\",\"version\":\"%s\"}", "DDD4001708-05946", "5.8.501.0");*/
                     Map<String, String> params = new HashMap<>();
-                    params.put("guid", DeviceInformation.getInstance().getGuid());
+                    params.put("guid", "DDD4001708-05946");//正式版要修改的 mGuid
                     params.put("cmd", "heart_beat");
                     params.put("version", BuildConfig.VERSION_NAME);
                     JSONObject jsonObject=new JSONObject(params);
@@ -80,9 +81,10 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<String> {
      */
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, String s) throws Exception {
-        byte[] data = Base64.decode(s.getBytes(), Base64.DEFAULT);
+        byte[] data =Base64.decode(s.getBytes(),0,s.length(), Base64.DEFAULT);// Base64.decode(s.getBytes(), Base64.DEFAULT);
         String str = new String(data);
-        Log.i(TAG, "收到服务端消息：----------s=" + str);
+
+        Log.i(TAG, "收到服务端消息：----------s=" + str.length()+"  s="+s.length()+" st="+str);
         listener.onMessageResponse(str);
     }
 

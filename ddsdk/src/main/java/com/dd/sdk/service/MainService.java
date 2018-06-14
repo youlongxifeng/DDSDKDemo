@@ -6,6 +6,7 @@ import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.HandlerThread;
@@ -15,6 +16,7 @@ import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.netty.NettyClient;
 import com.dd.sdk.netty.NettyListener;
 import com.dd.sdk.tools.LogUtils;
@@ -37,17 +39,19 @@ public class MainService extends Service implements NettyListener, Callback {
     private final static int QUERY_PROCESS_SURVIVING = 1;
     public final static String CONFIG_BEAN = "config_bean";
     public final static String PACKAGE_NAME = "package_name";
+    public final static String GUID_NAME = "guid_name";
+    private boolean isbind=false;
     CopyOnWriteArrayList<String> copyOnWriteArrayList = new CopyOnWriteArrayList<>();
     ListenerManagerImpl mListenerManager;
     NettyClient mNettyClient;
     private String mPacageName = null;
+    private String mGuid;
     HandlerThread mHandlerThread;
     Handler mMainHandler;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        LogUtils.init(null, true, true);
         mListenerManager = new ListenerManagerImpl();
         Log.i(TAG, "======onCreate=====");
     }
@@ -55,15 +59,16 @@ public class MainService extends Service implements NettyListener, Callback {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        /*if (mNettyClient != null) {
+      if (mNettyClient != null) {
             mNettyClient.close();
             mNettyClient = null;
         }
         Bundle bundle = intent.getExtras();
         NetConfig netConfig = (NetConfig) bundle.getSerializable(NetConfig.CONFIG_BEAN);
         mPacageName = bundle.getString(MainService.PACKAGE_NAME);
+        mGuid=bundle.getString(MainService.GUID_NAME);
         if (netConfig != null) {
-            mNettyClient = new NettyClient(this, netConfig.getdPort(), netConfig.getDomain());
+            mNettyClient = new NettyClient(this, netConfig.getdPort(), netConfig.getDomain(),mGuid);
             mNettyClient.connect();
         } else {
 
@@ -72,7 +77,8 @@ public class MainService extends Service implements NettyListener, Callback {
         mHandlerThread.setDaemon(true);
         mHandlerThread.start();
         mMainHandler = new Handler(mHandlerThread.getLooper(), this);
-        mMainHandler.sendEmptyMessage(QUERY_PROCESS_SURVIVING);*/
+        mMainHandler.sendEmptyMessage(QUERY_PROCESS_SURVIVING);
+        isbind=true;
         Log.i(TAG, "======onBind=====netConfig="  );
         return (IBinder) mBundle;
     }
@@ -84,7 +90,7 @@ public class MainService extends Service implements NettyListener, Callback {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    @Override
+   @Override
     public void onMessageResponse(Object msg) {
         try {
 
@@ -101,8 +107,11 @@ public class MainService extends Service implements NettyListener, Callback {
 
         try {
             Log.i(TAG, "======onMessageResponse=====statusCode=" + statusCode);
-            mBundle.onServiceStatusConnectChanged(statusCode);
-            mNettyClient.reconnect();
+            if(isbind){
+                mBundle.onServiceStatusConnectChanged(statusCode);
+                mNettyClient.reconnect();
+            }
+
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -111,15 +120,17 @@ public class MainService extends Service implements NettyListener, Callback {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "======ononUnbind======");
+        isbind=false;
         return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mNettyClient.close();
         Log.i(TAG, "======onDestroy======");
-
+        if(mNettyClient!=null){
+            mNettyClient.close();
+        }
     }
 
     private ICommandManager mBundle = new ICommandManager.Stub() {
@@ -127,11 +138,13 @@ public class MainService extends Service implements NettyListener, Callback {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {
             mListenerManager.onMessageResponse(msg);
+            LogUtils.i(TAG, "onMessageResponse================"+msg);
         }
 
         @Override
         public void onServiceStatusConnectChanged(int statusCode) throws RemoteException {
             mListenerManager.onServiceStatusConnectChanged(statusCode);
+            LogUtils.i(TAG, "onServiceStatusConnectChanged================"+statusCode);
         }
 
         @Override

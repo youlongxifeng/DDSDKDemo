@@ -5,13 +5,15 @@ import android.content.Context;
 import android.util.DisplayMetrics;
 
 import com.dd.sdk.DDSDK;
+import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DeviceInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
-import com.dd.sdk.netbean.RandomPwd;
+import com.dd.sdk.netbean.OpenDoorPwd;
+import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 
@@ -34,13 +36,13 @@ public class DDApplication extends Application implements InstructionListener {
     public void onCreate() {
         super.onCreate();
         mContext=this;
-        DDSDK.init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
+        //DDSDK.init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
 
 
     }
 
     public static void unbindService(){
-        DDSDK.unbindService(mContext);
+        DDSDK.unbindService();
     }
 
     /**
@@ -98,14 +100,13 @@ public class DDApplication extends Application implements InstructionListener {
 
     /**
      * 开门指令，返回开门类型的不同，相关操作也会有差异，但是开门成功后，一样需要上报访客留影。
-     * @param openDoorType 开门类型
-     * @param describe 开门描述
+     * @param openDoor  开门数据
      * @return
      */
     @Override
-    public ResultBean openDoor(int openDoorType, String describe) {
+    public ResultBean openDoor(RequestOpenDoor openDoor) {
 
-        switch (openDoorType) {
+        switch (openDoor.getOperateType()) {
             case OpenDoorListener.TYPE_CARD://刷卡开门
 
                 break;
@@ -121,7 +122,7 @@ public class DDApplication extends Application implements InstructionListener {
                 break;
 
         }
-        String fileType = null;//文件类型 Constant.VIDEO_TYPE Constant.PICTURE_TYPE，
+        FileType fileType = null;//文件类型 FileType.VIDEO_TYPE FileType.PICTURE_TYPE，
         String fileName = null;//文件名称
         String fileAddress = null;//文件地址
         String guid = null;//设备唯一标识符;
@@ -132,7 +133,7 @@ public class DDApplication extends Application implements InstructionListener {
         String content = null;//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
         String room_id = null;//房间id
         String reason = null;//摄像头故障状态码
-        long open_time = 0L;//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
+        String open_time = "";//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
 
 
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
@@ -160,7 +161,7 @@ public class DDApplication extends Application implements InstructionListener {
      * @return
      */
     @Override
-    public ResultBean getNetworkCipher(RandomPwd pwd) {//
+    public ResultBean getNetworkCipher(OpenDoorPwd pwd) {//
 
         return new ResultBean();
     }
@@ -179,5 +180,8 @@ public class DDApplication extends Application implements InstructionListener {
         //return PasswordState.getPasswordState(PasswordState.SUCCESS);
     }
 
-
+    @Override
+    public int nameListCurid() {
+        return 0;
+    }
 }

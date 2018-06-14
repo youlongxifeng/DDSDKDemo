@@ -43,7 +43,7 @@ public class ListenerManagerImpl implements ListenerManager {
 
             for (int i = 0; i < count; i++) {
                 LogUtils.i(TAG, "\n onMessageResponse==count=" + count+"  i="+i+" msg="+msg);
-                mOnPlayChangedListener.getBroadcastItem(i).onMessageResponse(msg+"  i="+i);
+                mOnPlayChangedListener.getBroadcastItem(i).onMessageResponse(msg);
             }
         } catch (RemoteException e) {
             e.printStackTrace();

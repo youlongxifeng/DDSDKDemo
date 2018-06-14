@@ -1,5 +1,7 @@
 package com.dd.sdk.netbean;
 
+import java.io.Serializable;
+
 /**
  * @author Administrator
  * @name DoorDuProjectSDK
@@ -10,7 +12,7 @@ package com.dd.sdk.netbean;
  * @class describe
  */
 
-public class UpdoorconfigBean {
+public class UpdoorconfigBean implements Serializable{
     /**
      * 视频分辨率
      */

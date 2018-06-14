@@ -29,11 +29,11 @@ public class NetConfig implements Serializable {
     /**
      * 门禁机上传配置
      */
-    public final static String UPDATE_CONFIG = "/v1/config/update";
+    public final static String UPDATE_CONFIG = "/v1/config";
     /**
      * 获取门禁卡列表
      */
-    public final static String GET_CARD = "/v1/device/card?";
+    public final static String GET_CARD = "/v1/device/cards?";
     /**
      * 上报访客留影
      */

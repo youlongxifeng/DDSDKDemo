@@ -13,8 +13,8 @@ package com.dd.sdk.tools;
 import android.util.Log;
 public class LogUtils {
     private static String sTag = "LogUtils";
-    private static boolean sIsDebug = false;
-    private static boolean sIsTrace = false;
+    private static boolean sIsDebug = true;
+    private static boolean sIsTrace = true;
 
     public LogUtils() {
     }

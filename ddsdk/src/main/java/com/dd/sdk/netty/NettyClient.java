@@ -1,10 +1,17 @@
 package com.dd.sdk.netty;
 
+import android.text.TextUtils;
 import android.util.Log;
+
+import com.dd.sdk.BuildConfig;
+
+import org.json.JSONObject;
 
 import java.nio.charset.Charset;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
@@ -30,18 +37,25 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 public class NettyClient {
     private final static String TAG=NettyClient.class.getSimpleName();
+    /**
+     * 是否连接
+     */
+    private boolean isConnect = false;//
     private NettyListener listener;
     private int port;//端口
     private String host;//域名
+    private String mGuid;
     private SocketChannel socketChannel;
     private ChannelFuture channelFuture = null;
 
-    public NettyClient(NettyListener nettyListener, int port, String host) {
+    public NettyClient(NettyListener nettyListener, int port, String host,String guid) {
         this.listener = nettyListener;
+        this.mGuid=guid;
       /*  this.port = port;
         this.host = host;*/
-        this.port = 9501;
-        this.host = "test.swoole.doordu.com";
+
+        this.port = 9501;//正式版要修改的
+        this.host = "test.swoole.doordu.com";////正式版要修改的
         Log.i(TAG,"connect===port="+port+"   host="+host);
     }
 
@@ -63,7 +77,7 @@ public class NettyClient {
                     socketChannel.pipeline().addLast(new IdleStateHandler(20, 10, 0));
                     socketChannel.pipeline().addLast(new StringEncoder(Charset.forName("UTF-8")));
                     socketChannel.pipeline().addLast(new StringDecoder(Charset.forName("UTF-8")));
-                    socketChannel.pipeline().addLast(new NettyClientHandler(listener));
+                    socketChannel.pipeline().addLast(new NettyClientHandler(mGuid,listener));
 
                   /*  SslContext sslCtx = SslContextBuilder.forClient()
                                                          .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
@@ -94,7 +108,9 @@ public class NettyClient {
                 Log.i(TAG,"channelFuture===="+channelFuture.isSuccess());
                 if (channelFuture.isSuccess()) {
                     socketChannel = (SocketChannel) channelFuture.channel();
+                    isConnect = true;
                 } else {
+                    isConnect = false;
                     connect();
                 }
 
@@ -107,20 +123,16 @@ public class NettyClient {
      * 断开重连 还需要优化
      */
     public void reconnect() {
-        if (channelFuture != null) {
-            if (channelFuture.channel() != null && channelFuture.channel().isOpen()) {
-                channelFuture.channel().close();
+            if (socketChannel != null && channelFuture.channel().isOpen()) {
+                socketChannel.close();
             }
-        }
         connect();
     }
 
     public void close() {
-        if (channelFuture != null) {
-            if (channelFuture.channel() != null && channelFuture.channel().isOpen()) {
-                channelFuture.channel().close();
-            }
-        }
+            if (socketChannel != null && socketChannel.isOpen()) {
+                socketChannel.close();
+                    }
     }
 
     /**
@@ -128,5 +140,50 @@ public class NettyClient {
      */
     public void setListener(NettyListener listener) {
         this.listener = listener;
+    }
+
+
+    public boolean sendMsgToServer(String data, ChannelFutureListener listener) {
+        boolean flag = socketChannel != null && isConnect;
+        if (flag) {
+//			ByteBuf buf = Unpooled.copiedBuffer(data);
+//            ByteBuf byteBuf = Unpooled.copiedBuffer(data + System.getProperty("line.separator"), //2
+//                    CharsetUtil.UTF_8);
+            socketChannel.writeAndFlush(data + System.getProperty("line.separator")).addListener(listener);
+        }
+        return flag;
+    }
+
+    public boolean sendMsgToServer(byte[] data, ChannelFutureListener listener) {
+        boolean flag = socketChannel != null && isConnect;
+        if (flag) {
+            //ByteBuf buf = Unpooled.copiedBuffer(data);
+            String  str=new String(data) +"*"+ System.getProperty("line.separator");
+            ByteBuf buf = Unpooled.copiedBuffer(str.getBytes());
+            socketChannel.writeAndFlush(buf).addListener(listener);
+        }
+        return flag;
+    }
+    protected void sendReponse(String cmd, String content, boolean success) {
+
+    }
+
+    public static String builder(String cmd, String content, String sn,String guid, boolean success) {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("cmd", cmd);
+            o.put("success", success);
+            o.put("guid", guid);
+            if (!TextUtils.isEmpty(content)) {
+                o.put("message", content);
+            }
+            if (!TextUtils.isEmpty(sn)) {
+                o.put("sn", sn);
+            }
+            o.put("version", BuildConfig.VERSION_NAME);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return o.toString();
     }
 }

@@ -19,4 +19,34 @@ public class CardInfo<T> {
     private boolean isAll;
     @SerializedName("record")
     private List<T> mInfo;
+
+
+
+    public boolean isAll() {
+        return isAll;
+    }
+
+    public void setAll(boolean all) {
+        isAll = all;
+    }
+
+    public List<T> getInfo() {
+        return mInfo;
+    }
+
+    public void setInfo(List<T> info) {
+        mInfo = info;
+    }
+    public int count()
+    {
+        return null == mInfo?0:mInfo.size();
+    }
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CardInfo{");
+        sb.append("isAll=").append(isAll);
+        sb.append(", mInfo=").append(mInfo);
+        sb.append('}');
+        return sb.toString();
+    }
 }

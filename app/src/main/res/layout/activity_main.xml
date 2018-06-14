@@ -12,9 +12,61 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/unbindserver"
+        tools:context="com.thc.ipcsample.MainActivity">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="black_and_white_list"
+            android:text="获取黑白名单"
+            tools:ignore="OnClick"/>
+
+        <Button
+            android:layout_marginTop="45dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="get_configuration_information"
+            android:text="获取配置信息"
+            tools:ignore="OnClick"/>
+
+        <Button
+            android:layout_marginTop="45dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="post_configuration_information"
+            android:text="上报配置信息"
+            tools:ignore="OnClick"/>
+
+        <Button
+            android:layout_marginTop="45dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="report_picture"
+            android:text="上报访客留影"
+            tools:ignore="OnClick"/>
+
+
+        <Button
+            android:layout_marginTop="45dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="report_video"
+            android:text="上报视频留影"
+            tools:ignore="OnClick"/>
+
+
+    </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>
