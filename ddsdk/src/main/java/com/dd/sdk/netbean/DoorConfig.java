@@ -172,6 +172,8 @@ public class DoorConfig implements Serializable {
      */
     private String dynamic_token;
     private String bluetooth_open_door;
+    /** 配置指纹，门禁机根据这个来判断配置是否有变动*/
+    private String hash;
 
     public String getSecocdServerIP() {
         return secocdServerIP;
@@ -509,9 +511,17 @@ public class DoorConfig implements Serializable {
         this.bluetooth_open_door = bluetooth_open_door;
     }
 
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DeviceConfig{");
+        final StringBuilder sb = new StringBuilder("DoorConfig{");
         sb.append("secocdServerIP='").append(secocdServerIP).append('\'');
         sb.append(", secocdServerPort='").append(secocdServerPort).append('\'');
         sb.append(", openTime='").append(openTime).append('\'');
@@ -538,7 +548,7 @@ public class DoorConfig implements Serializable {
         sb.append(", SetupNO='").append(SetupNO).append('\'');
         sb.append(", companyAdsPhone='").append(companyAdsPhone).append('\'');
         sb.append(", localType='").append(localType).append('\'');
-        sb.append(", webrtcconfig='").append(webrtcconfig).append('\'');
+        sb.append(", webrtcconfig=").append(webrtcconfig);
         sb.append(", init_code='").append(init_code).append('\'');
         sb.append(", sys_code='").append(sys_code).append('\'');
         sb.append(", door_alert='").append(door_alert).append('\'');
@@ -547,13 +557,14 @@ public class DoorConfig implements Serializable {
         sb.append(", ic_card_copy='").append(ic_card_copy).append('\'');
         sb.append(", open_monitor='").append(open_monitor).append('\'');
         sb.append(", disable_m1_card='").append(disable_m1_card).append('\'');
-        sb.append(", dynamic_config='").append(dynamic_config).append('\'');
+        sb.append(", dynamic_config=").append(dynamic_config);
         sb.append(", dep_id='").append(dep_id).append('\'');
         sb.append(", dep_type='").append(dep_type).append('\'');
         sb.append(", is_dial='").append(is_dial).append('\'');
         sb.append(", is_support_token='").append(is_support_token).append('\'');
         sb.append(", dynamic_token='").append(dynamic_token).append('\'');
         sb.append(", bluetooth_open_door='").append(bluetooth_open_door).append('\'');
+        sb.append(", hash='").append(hash).append('\'');
         sb.append('}');
         return sb.toString();
     }

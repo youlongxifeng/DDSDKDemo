@@ -20,7 +20,6 @@ import com.dd.sdk.netbean.OpenDoorPwd;
 import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
-import com.dd.sdk.service.ICommandManager;
 import com.dd.sdk.tools.LogUtils;
 
 import java.io.File;
@@ -29,7 +28,7 @@ import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements InstructionListener {
-    private ICommandManager mICommandManager;
+
     Context mContext;
 
     @Override

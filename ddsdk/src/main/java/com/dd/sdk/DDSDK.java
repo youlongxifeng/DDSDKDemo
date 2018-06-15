@@ -353,7 +353,7 @@ public class DDSDK {
      */
     public static void release(Application application) {
         if (null != mNetworkState) {
-            //mNetworkState.release();
+            mNetworkState.release();
             mNetworkState = null;
         }
         unbindService();
