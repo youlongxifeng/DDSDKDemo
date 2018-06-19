@@ -8,6 +8,8 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.View.OnClickListener;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
 import com.dd.sdk.DDSDK;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
@@ -37,7 +39,10 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         setContentView(R.layout.activity_main);
         this.mContext = this;
         LogUtils.init(null, true, true);
-        DDSDK.init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
+        RequestQueue mNetWorkRequest = Volley.newRequestQueue(mContext);
+
+
+        DDSDK.getinstance().init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
 
         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
             @Override
@@ -54,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      * @param view
      */
     public void black_and_white_list(View view) {
-        DDSDK.getCardInfo(mContext, "test20160822001", 0);
+        DDSDK.getinstance().getCardInfo(mContext, "test20160822001", 0);
     }
 
     /**
@@ -63,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      * @param view
      */
     public void get_configuration_information(View view) {
-        DDSDK.getConfig(mContext, "test20160822001", "5000");
+        DDSDK.getinstance().getConfig(mContext, "test20160822001", "5000");
     }
 
     /**
@@ -95,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //上报配置内容
-        DDSDK.postDeviceConfig("test20160822001", updoorconfigBean);
+        DDSDK.getinstance().postDeviceConfig("test20160822001", updoorconfigBean);
     }
 
     /**
@@ -119,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         File file = new File(fileAddress);
         LogUtils.i("fileAddress =" + fileAddress + " file=" + file + "  file=" + file.exists());
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-       boolean isUpload = DDSDK.uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+       boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
 
     }
 
@@ -150,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         File file = new File(fileAddress);
         LogUtils.i("fileAddress =" + fileAddress + " file=" + file + "  file=" + file.exists());
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-        boolean isUpload = DDSDK.uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+        boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
 
     }
 
@@ -165,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
     protected void onDestroy() {
         super.onDestroy();
         LogUtils.i("unbindService==Destroy=");
-        DDSDK.release(this.getApplication());
+        DDSDK.getinstance().release(this.getApplication());
     }
 
 
@@ -201,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //上报配置内容
-        DDSDK.postDeviceConfig("test20160822001", updoorconfigBean);
+        DDSDK.getinstance().postDeviceConfig("test20160822001", updoorconfigBean);
         return new ResultBean();
     }
 
@@ -249,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-        boolean isUpload = DDSDK.uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+        boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
         return new ResultBean();
     }
 

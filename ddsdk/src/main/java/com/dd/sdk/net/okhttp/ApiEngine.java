@@ -41,7 +41,7 @@ public class ApiEngine {
 
         //缓存
         int size = 1024 * 1024 * 100;
-        File cacheFile = new File(DDSDK.getContext().getCacheDir(), "OkHttpCache");
+        File cacheFile = new File(DDSDK.getinstance().getContext().getCacheDir(), "OkHttpCache");
         Cache cache = new Cache(cacheFile, size);
 
         OkHttpClient client = new OkHttpClient.Builder()
@@ -55,7 +55,7 @@ public class ApiEngine {
                 .build();
 
         retrofit = new Retrofit.Builder()
-              // .baseUrl(Constant.BASE_URL)
+                .baseUrl("http://10.0.2.152:8888")
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())

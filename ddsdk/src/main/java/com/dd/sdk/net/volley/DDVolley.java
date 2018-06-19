@@ -20,7 +20,7 @@ public class DDVolley {
 
     public static RequestQueue addRequestQueue(Request request) {
         if (mNetWorkRequest == null) {
-            mNetWorkRequest = Volley.newRequestQueue(DDSDK.getContext());
+            mNetWorkRequest = Volley.newRequestQueue(DDSDK.getinstance().getContext());
         }
         mNetWorkRequest.add(request);
         return mNetWorkRequest;

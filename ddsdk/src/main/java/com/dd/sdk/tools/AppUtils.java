@@ -38,9 +38,9 @@ public class AppUtils {
      * Phone number 获取手机号码
      */
     public static String getPhoneNumber(Context context) {
-        TelephonyManager mTm = (TelephonyManager) DDSDK.getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager mTm = (TelephonyManager) DDSDK.getinstance().getContext().getSystemService(Context.TELEPHONY_SERVICE);
 
-        WifiManager wifiManager = (WifiManager) DDSDK.getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        WifiManager wifiManager = (WifiManager) DDSDK.getinstance().getContext().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
 
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
 
@@ -57,8 +57,8 @@ public class AppUtils {
         PackageInfo pi;
         String versionNum;
         try {
-            PackageManager pm = DDSDK.getContext().getPackageManager();
-            pi = pm.getPackageInfo(DDSDK.getContext().getPackageName(), PackageManager.GET_CONFIGURATIONS);
+            PackageManager pm = DDSDK.getinstance().getContext().getPackageManager();
+            pi = pm.getPackageInfo(DDSDK.getinstance().getContext().getPackageName(), PackageManager.GET_CONFIGURATIONS);
             versionNum = pi.versionName;
         } catch (Exception e) {
             versionNum = "0";
@@ -76,7 +76,7 @@ public class AppUtils {
      */
     public static String getUUID() {
 
-        Context context = DDSDK.getContext();
+        Context context = DDSDK.getinstance().getContext();
 
         String uuid = (String) SPUtils.get(context, "PHONE_UUID", "");
 

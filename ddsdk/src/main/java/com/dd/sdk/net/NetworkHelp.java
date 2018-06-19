@@ -58,12 +58,16 @@ public class NetworkHelp {
      * @param secret 授权密码
      */
     public static void getAccessToken(String appid, String secret, Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
+        try {
+            Map<String, String> params = new HashMap<>();
+            params.put("appid", appid);
+            params.put("secret", secret);
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.TOKEN), new JSONObject(params), listener, errlistener);
+            DDVolley.addRequestQueue(request);
+        } catch (Exception e) {
+        LogUtils.i("getAccessToken   e===="+e);
+        }
 
-        Map<String, String> params = new HashMap<String, String>();
-        params.put("appid", appid);
-        params.put("secret", secret);
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.TOKEN), new JSONObject(params), listener, errlistener);
-        DDVolley.addRequestQueue(request);
     }
     /**
      *
@@ -131,7 +135,7 @@ public class NetworkHelp {
         Gson gson = new Gson();
         String content = gson.toJson(config);
         params.put("config", content);
-        LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.UPDATE_CONFIG)+" content="+new JSONObject(params).toString());
+        LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.UPDATE_CONFIG) + " content=" + new JSONObject(params).toString());
         JsonObjectRequest request = new JsonObjectRequest(Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.UPDATE_CONFIG), new JSONObject(params), listener, errlistener);
         DDVolley.addRequestQueue(request);
     }
@@ -186,7 +190,7 @@ public class NetworkHelp {
         params.put("content", content);//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
         params.put("room_id", room_id);//房间 ID
         params.put("reason", reason);//摄像头故障状态码
-        params.put("open_time",  open_time);//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
+        params.put("open_time", open_time);//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
         LogUtils.i(TAG, "getRegisterDevice" + new JSONObject(params).toString());
         JsonObjectRequest request = null;
         //Constant.VIDEO_TYPE Constant.PICTURE_TYPE
