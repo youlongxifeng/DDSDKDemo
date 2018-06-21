@@ -22,6 +22,11 @@ import java.util.List;
 
 public interface InstructionListener {
     /**
+     * 设备未注册
+     */
+    ResultBean noRegister();
+
+    /**
      *  上报应用层，当前设备未绑定，需要绑定设备
      */
     ResultBean noBinding( );

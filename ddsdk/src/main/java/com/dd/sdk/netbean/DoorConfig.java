@@ -175,6 +175,13 @@ public class DoorConfig implements Serializable {
     /** 配置指纹，门禁机根据这个来判断配置是否有变动*/
     private String hash;
 
+    /**
+     * 获取桶信息
+     * @return
+     */
+    private String bucket_name;
+
+
     public String getSecocdServerIP() {
         return secocdServerIP;
     }
@@ -519,6 +526,15 @@ public class DoorConfig implements Serializable {
         this.hash = hash;
     }
 
+
+    public String getBucket_name() {
+        return bucket_name;
+    }
+
+    public void setBucket_name(String bucket_name) {
+        this.bucket_name = bucket_name;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("DoorConfig{");
@@ -565,6 +581,7 @@ public class DoorConfig implements Serializable {
         sb.append(", dynamic_token='").append(dynamic_token).append('\'');
         sb.append(", bluetooth_open_door='").append(bluetooth_open_door).append('\'');
         sb.append(", hash='").append(hash).append('\'');
+        sb.append(", bucket_name='").append(bucket_name).append('\'');
         sb.append('}');
         return sb.toString();
     }

@@ -5,7 +5,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
+import com.dd.sdk.DDSDK;
 import com.dd.sdk.netbean.AccessToken;
+import com.dd.sdk.tools.LogUtils;
 
 /**
  * Token信息
@@ -28,11 +30,18 @@ public class TokenPrefer {
      */
     public static AccessToken loadConfig(Context context) {
         AccessToken info = new AccessToken();
-        SharedPreferences share = context.getSharedPreferences("token_prefer", 0);
-        if (info != null) {
-            info.token = share.getString("access_token", "");
-            info.expires_in = share.getString("expires_in", "");
-        }
+       try {
+           LogUtils.i("context  ="+(context!=null)+" "+ (DDSDK.getinstance().getContext()==null));
+           if(context!=null){
+               SharedPreferences share = context.getSharedPreferences("token_prefer", 0);
+               if (info != null) {
+                   info.token = share.getString("access_token", "");
+                   info.expires_in = share.getString("expires_in", "");
+               }
+           }
+       }catch (Exception e){
+           LogUtils.i("context  e="+e);
+       }
         return info;
     }
 

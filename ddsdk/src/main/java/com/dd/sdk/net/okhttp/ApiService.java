@@ -2,6 +2,8 @@ package com.dd.sdk.net.okhttp;
 
 import org.json.JSONObject;
 
+import java.util.HashMap;
+
 import io.reactivex.Observable;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -11,6 +13,8 @@ import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
+import retrofit2.http.Path;
+import retrofit2.http.QueryMap;
 import retrofit2.http.Url;
 
 /**
@@ -42,4 +46,14 @@ public interface ApiService {
     @FormUrlEncoded//
     @POST("v1/token")
     Observable<JSONObject>accessToken( @Field("appid") String appid, @Field("secret")String secret);
+
+
+
+    /**
+     * 上传文件
+     */
+    @PUT("/{bucket}/{object}")
+    Observable<String> putBucketObject(@Url String url,@Path("bucket") String bucket/**桶名称*/, @Field("object") String object,/**文件名称*/
+                                       @Part MultipartBody.Part file,//上传文件
+                                       @QueryMap HashMap<String, String> map/**map信息*/);
 }

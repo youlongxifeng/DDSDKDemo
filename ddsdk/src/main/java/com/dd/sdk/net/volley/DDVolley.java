@@ -4,6 +4,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.dd.sdk.DDSDK;
+import com.dd.sdk.tools.LogUtils;
 
 /**
  * @author Administrator
@@ -20,6 +21,7 @@ public class DDVolley {
 
     public static RequestQueue addRequestQueue(Request request) {
         if (mNetWorkRequest == null) {
+            LogUtils.i("=========="+(DDSDK.getinstance().getContext()!=null));
             mNetWorkRequest = Volley.newRequestQueue(DDSDK.getinstance().getContext());
         }
         mNetWorkRequest.add(request);

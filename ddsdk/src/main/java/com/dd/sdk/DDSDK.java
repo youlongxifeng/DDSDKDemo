@@ -1,6 +1,5 @@
 package com.dd.sdk;
 
-import android.app.Application;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -9,20 +8,18 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.Volley;
 import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.common.NetworkState;
+import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.ConfigurationListener;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.manage.ServerCMD;
 import com.dd.sdk.net.NetworkHelp;
-import com.dd.sdk.net.rgw.RgwAdmin;
-import com.dd.sdk.net.rgw.RgwAdminBuilder;
+import com.dd.sdk.net.okhttp.OkHttpHelp;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
@@ -44,9 +41,7 @@ import com.google.mgson.reflect.TypeToken;
 import org.json.JSONObject;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -69,8 +64,7 @@ public class DDSDK {
     private static Context mContext;
     private static AccessToken accessToken;
     private static ICommandManager mICommandManager;
-
-    private RgwAdmin mRgwAdmin;
+    public static String accessKey, secretKey, endpoint, bucket_name;
     //  private static CompositeDisposable compositeDisposable = new CompositeDisposable();
     /**
      * 端口号和域名
@@ -139,7 +133,7 @@ public class DDSDK {
 
         @Override
         public void onServiceStatusConnectChanged(int statusCode) throws RemoteException {
-            LogUtils.i(TAG, "onServiceStatusConnectChanged  statusCode=" + statusCode);
+            // LogUtils.i(TAG, "onServiceStatusConnectChanged  statusCode=" + statusCode);
         }
     };
 
@@ -180,11 +174,22 @@ public class DDSDK {
         accessToken(app_id, secret_key);
         bindService(mContext);
 
-        mRgwAdmin = new RgwAdminBuilder().accessKey("MZWJ22XFVA54XN23R3VP")
-                                         .secretKey("7YWt58ZrlZx8GAyLEgBzSNDHuffgskC5s7JEsQ6K")
-                                         .endpoint("http://10.11.3.53:7480").build();
-
+        bucket_name = "bucket_name";
     }
+
+    /**
+     * 初始化亚马逊密码和域名以及key
+     *
+     * @param mendpoint
+     * @param maccessKey
+     * @param msecretKey
+     */
+    public void amazonCloudinit(String mendpoint, String maccessKey, String msecretKey) {
+        endpoint = mendpoint;
+        secretKey = maccessKey;
+        accessKey = msecretKey;
+    }
+
 
     /**
      * 获取token
@@ -193,19 +198,39 @@ public class DDSDK {
      * @param secret_key
      */
     private void accessToken(final String app_id, final String secret_key) {
-
-        RequestQueue mNetWorkRequest = Volley.newRequestQueue(mContext);
-
         NetworkHelp.getInstance().getAccessToken(app_id, secret_key, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject object) {
+                LogUtils.i(TAG, "init onResponse  response==" + object);
+                BaseResponse<AccessToken> response = new BaseResponse<AccessToken>();
+                try {
+                    Type t = new TypeToken<BaseResponse<AccessToken>>() {
+                    }.getType();
+                    response = GsonUtils.getObject(object.toString(), t, response);
+                    LogUtils.i(TAG, "init onResponse  response==" + response);
+                    if (response.isSuccess()) {
+                        accessToken = response.data;// GsonUtils.getObject(response.data.toString(), AccessToken.class);
+                        TokenPrefer.saveConfig(mContext, accessToken);
+                        RegisterDevice(mContext, AppUtils.getIpAddress(mContext), "13787138669");
+                    } else {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.noBinding();
+                        }
+                    }
+                    LogUtils.i(TAG, "baseResponse==" + response);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    LogUtils.i(TAG, "init onResponse  response=e=" + e);
+                }
 
 
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
+                mInstructionListener.tokenFile();
+                mContext = null;
 
             }
         });
@@ -255,7 +280,7 @@ public class DDSDK {
     /**
      * 设备注册检查,如果没有注册则注册设备
      */
-    private void RegisterDevice(final Context context, String macAddress, String mobile) {
+    private void RegisterDevice(final Context context, final String macAddress, final String mobile) {
         NetworkHelp.getRegisterDevice(context, macAddress, mobile, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -266,8 +291,10 @@ public class DDSDK {
                         getConfig(context, DeviceInformation.getInstance().getGuid(), "5000");
                         return;
                     case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
+                        RegisterDevice(context, macAddress, mobile);//注册失败重新注册
                         break;
                     case RegisterResponse.ALREADY_REGISTERED://20012设备已注册
+
                         break;
                 }
 
@@ -301,11 +328,18 @@ public class DDSDK {
                             switch (baseResponse.code) {
                                 case RegisterResponse.RESPONSE_SUCCESS://返回成功
                                     DoorConfig deviceConfig = response1.getData();
+                                    bucket_name = deviceConfig.getBucket_name();
                                     mInstructionListener.getconfig(deviceConfig); //将获取设备配置的内容发送到上层App
                                     return;
                                 case RegisterResponse.NO_REGISTER://20011	设备未注册
+                                    if (mInstructionListener != null) {
+                                        mInstructionListener.noRegister();//设备未绑定，需要重新注册
+                                    }
                                     break;
                                 case RegisterResponse.NO_BOUND://20012设备w未绑定
+                                    if (mInstructionListener != null) {
+                                        mInstructionListener.noBinding();//设备未绑定，需要重新绑定
+                                    }
                                     break;
                             }
                         } else {
@@ -330,25 +364,32 @@ public class DDSDK {
      * @param guid   设备唯一标识符
      * @param config json对象	配置内容
      */
-    public void postDeviceConfig(String guid, UpdoorconfigBean config) {
+    public ResultBean postDeviceConfig(String guid, UpdoorconfigBean config) {
+        final ResultBean resultBean=new ResultBean();
         NetworkHelp.postConfig(mContext, guid, config, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 LogUtils.i("postDeviceConfig   response=" + response);
+                resultBean.setErrCode(200);
+                resultBean.setErrMsg("信息上报成功");
             }
         }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
                 LogUtils.i("postDeviceConfig   error=" + error.getMessage());
+                resultBean.setErrCode(-1);
+                resultBean.setErrMsg("信息上报失败");
             }
         });
+
+        return resultBean;
     }
 
 
     /**
      * 释放相关资源
      */
-    public void release(Application application) {
+    public void release(Context context) {
         if (null != mNetworkState) {
             mNetworkState.release();
             mNetworkState = null;
@@ -369,11 +410,9 @@ public class DDSDK {
             @Override
             public void onResponse(JSONObject response) {
                 BaseResponse<CardInfo<Floor>> cardinfo = new BaseResponse<>();
-                LogUtils.i("getCardInfo   response=" + response);
                 Type t = new TypeToken<BaseResponse<CardInfo<Floor>>>() {
                 }.getType();
                 BaseResponse<CardInfo<Floor>> response1 = GsonUtils.getObject(response.toString(), t, cardinfo);
-                LogUtils.i("getCardInfo   response1=" + response1);
                 if (response1 != null) {
                     switch (response1.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
@@ -381,6 +420,7 @@ public class DDSDK {
                             checkDeviceConfig(context, guid, curid, deviceConfig);
                             return;
                         case RegisterResponse.NO_REGISTER://20011	设备未注册
+
                             break;
                         case RegisterResponse.NO_BOUND://20012设备w未绑定
                             break;
@@ -401,21 +441,28 @@ public class DDSDK {
 
     /**
      * 检测当前数据是否已经发完结
+     *
+     * @param context
+     * @param guid
+     * @param curid
+     * @param deviceConfig
      */
     private void checkDeviceConfig(final Context context, final String guid, final int curid, final CardInfo deviceConfig) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 List<CardInfo<Floor>> cardInfos = deviceConfig.getInfo();
-                ResultBean resultBean = mInstructionListener.getBlackAndWhiteList(cardInfos);
-                //if (resultBean.isSuccess() && !deviceConfig.isAll()) {
-                if (deviceConfig != null && deviceConfig.count() == 500) {//约定每次最大返回500条
-                    getCardInfo(context, guid, curid);
-                    int oldguid = SPUtils.get(CURID_VALUE, curid);
-                    SPUtils.put(CURID_VALUE, curid + oldguid);
-                } else {
-                    SPUtils.put(CURID_VALUE, 0);
+                ResultBean resultBean = mInstructionListener.getBlackAndWhiteList(cardInfos);//上报到上层应用处理数据
+                if (resultBean.isSuccess()) {//上层APP数据处理成功
+                    if (deviceConfig != null && deviceConfig.count() == 500) {//约定每次最大返回500条
+                        getCardInfo(context, guid, curid);
+                        int oldguid = SPUtils.get(CURID_VALUE, curid);
+                        SPUtils.put(CURID_VALUE, curid + oldguid);
+                    } else {
+                        SPUtils.put(CURID_VALUE, 0);
+                    }
                 }
+
             }
         };
         ThreadManager.getThreadPollProxy().execute(runnable);
@@ -438,57 +485,41 @@ public class DDSDK {
      * @param open_time    可选 13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
      * @return 上传成功返回true，失败返回false 请重传一次
      */
+    static boolean mRequestState;
+
     public boolean uploadVideoOrPicture(FileType fileType, String fileName, String fileAddress, String guid, String device_type, int operate_type, String objectkey, long time,
                                         String content, String room_id, String reason, String open_time) {
-        final boolean[] mRequestState = new boolean[1];
-        NetworkHelp.uploadVideoOrPicture(mContext, fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
-                content, room_id, reason, open_time, new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        LogUtils.i("uploadVideoOrPicture   response=" + response);
-                        BaseResponse cardinfo = new BaseResponse();
-                        LogUtils.i("getCardInfo   response=" + response);
-                        Type t = new TypeToken<BaseResponse>() {
-                        }.getType();
-                        BaseResponse response1 = GsonUtils.getObject(response.toString(), t, cardinfo);
-                        if (response1 != null && response1.isSuccess()) {
-                            mRequestState[0] = true;
-                        } else {
-                            mRequestState[0] = false;
+        mRequestState = false;
+        try {
+            OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
+
+            NetworkHelp.uploadVideoOrPicture(DDSDK.getinstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
+                    content, room_id, reason, open_time, new Response.Listener<JSONObject>() {
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            BaseResponse cardinfo = new BaseResponse();
+                            Type t = new TypeToken<BaseResponse>() {
+                            }.getType();
+                            BaseResponse response1 = GsonUtils.getObject(response.toString(), t, cardinfo);
+                            if (response1 != null && response1.isSuccess()) {
+                                mRequestState = true;
+                            } else {
+                                mRequestState = false;
+                            }
                         }
-                    }
-                }, new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        mRequestState[0] = false;
-                    }
-                });
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("x-amz-acl", "public-read-write");
-        mRgwAdmin.createBucket("testsong", parameters);//bucketName 桶的名称  创建桶
-        mRgwAdmin.getBucket();//获取桶
-        //RGW_ADMIN.deleteBucket(bucket_name);
-        mRgwAdmin.putBucketObject("testsong", fileName, fileAddress, parameters);//提交文件
-        return mRequestState[0];
+                    }, new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            mRequestState = false;
+                        }
+                    });
+
+        } catch (Exception e) {
+            LogUtils.i("putBucketObject e=" + e);
+        }
+        return mRequestState;
     }
 
-   /* static DisposableObserver mDisposableObserver = new DisposableObserver() {
-
-        @Override
-        public void onNext(Object o) {
-
-        }
-
-        @Override
-        public void onError(Throwable e) {
-
-        }
-
-        @Override
-        public void onComplete() {
-
-        }
-    };*/
 
     /**
      * 密码开门

@@ -1,7 +1,6 @@
 package com.dd.sdk.net.rgw;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Radosgw administrator
@@ -16,7 +15,6 @@ import java.util.Optional;
  */
 @SuppressWarnings("SameParameterValue")
 public interface RgwAdmin {
-
 
     /**
      * Read the policy of an object.
@@ -68,7 +66,7 @@ public interface RgwAdmin {
      * @param objectKey  The object to read the policy from.
      * @return If successful returns the policy.
      */
-    Optional<String> getObjectPolicy(String bucketName, String objectKey);
+    String getObjectPolicy(String bucketName, String objectKey);
 
     /**
      * Read the policy of a bucket.
@@ -119,7 +117,7 @@ public interface RgwAdmin {
      * @param bucketName The bucket to read the policy from.
      * @return If successful returns the policy.
      */
-    Optional<String> getBucketPolicy(String bucketName);
+    String getBucketPolicy(String bucketName);
 
     void createBucket(String bucketName, Map<String, String> parameters);
 

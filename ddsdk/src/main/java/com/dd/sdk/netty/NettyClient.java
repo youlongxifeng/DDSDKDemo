@@ -51,11 +51,11 @@ public class NettyClient {
     public NettyClient(NettyListener nettyListener, int port, String host,String guid) {
         this.listener = nettyListener;
         this.mGuid=guid;
-      /*  this.port = port;
-        this.host = host;*/
+       this.port = port;
+        this.host = host;
 
-        this.port = 9501;//正式版要修改的
-        this.host = "test.swoole.doordu.com";////正式版要修改的
+      /*  this.port = 9501;//正式版要修改的
+        this.host = "test.swoole.doordu.com";////正式版要修改的*/
         Log.i(TAG,"connect===port="+port+"   host="+host);
     }
 

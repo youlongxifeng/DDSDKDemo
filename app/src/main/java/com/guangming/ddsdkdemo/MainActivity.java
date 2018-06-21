@@ -8,8 +8,6 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.View.OnClickListener;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
 import com.dd.sdk.DDSDK;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
@@ -22,6 +20,7 @@ import com.dd.sdk.netbean.OpenDoorPwd;
 import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
+import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.LogUtils;
 
 import java.io.File;
@@ -30,8 +29,9 @@ import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements InstructionListener {
-
+    public static String accessKey, secretKey, endpoint, bucket_name;
     Context mContext;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,17 +39,19 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         setContentView(R.layout.activity_main);
         this.mContext = this;
         LogUtils.init(null, true, true);
-        RequestQueue mNetWorkRequest = Volley.newRequestQueue(mContext);
-
+        accessKey = "GXDYC1SINE72M7IMOEG3";
+        secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
+        endpoint = "http://172.21.20.102:7480";
 
         DDSDK.getinstance().init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
-
+        DDSDK.getinstance().amazonCloudinit(endpoint,  accessKey,secretKey);
         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 //DDApplication.unbindService();
             }
         });
+
 
     }
 
@@ -109,23 +111,35 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      * @param view
      */
     public void report_picture(View view) {
-        FileType fileType = FileType.PICTURE_TYPE;//文件类型 FileType.VIDEO_TYPE FileType.PICTURE_TYPE，
-        String fileName = "picture";//文件名称
-        String fileAddress = Environment.getExternalStorageDirectory() + File.separator + "IMG.jpg";//文件地址
-        String guid = "test20160822001";//设备唯一标识符;
-        String device_type = "2";//设备类型 设备类型 1:门口机 2:Android 3:IOS设备 4:室内机
-        int operate_type = 1;//开门类型
-        String objectkey = "深圳大学城";//访客留影地址
-        long time = System.currentTimeMillis();//门禁机时间
-        String content = "content";//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
-        String room_id = "01";//房间id
-        String reason = "1";//摄像头故障状态码
-        String open_time = getFileName();//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
-        File file = new File(fileAddress);
-        LogUtils.i("fileAddress =" + fileAddress + " file=" + file + "  file=" + file.exists());
-        //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-       boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+        ThreadManager.getThreadPollProxy().execute(new Runnable() {
+            @Override
+            public void run() {
+                FileType fileType = FileType.PICTURE_TYPE;//文件类型 FileType.VIDEO_TYPE FileType.PICTURE_TYPE，
+                String fileName = "picture";//文件名称
+                String fileAddress = Environment.getExternalStorageDirectory() + File.separator + "IMG.jpg";//文件地址
+                String guid = "test20160822001";//设备唯一标识符;
+                String device_type = "2";//设备类型 设备类型 1:门口机 2:Android 3:IOS设备 4:室内机
+                int operate_type = 1;//开门类型
+                String objectkey = "深圳大学城";//访客留影地址
+                long time = System.currentTimeMillis();//门禁机时间
+                String content = "content";//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
+                String room_id = "01";//房间id
+                String reason = "1";//摄像头故障状态码
+                String open_time = getFileName();//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
+                File file = new File(fileAddress);
+                LogUtils.i("fileAddress =" + fileAddress + " file=" + file + "  file=" + file.exists());
+                //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
 
+                try {
+                    DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    LogUtils.i("fileAddress e=" + e);
+                }
+
+            }
+        });
     }
 
     public static String getFileName() {
@@ -175,8 +189,13 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
     @Override
+    public ResultBean noRegister() {
+        return new ResultBean();
+    }
+
+    @Override
     public ResultBean noBinding() {
-        return null;
+        return new ResultBean();
     }
 
     @Override
@@ -217,7 +236,8 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
     /**
      * 开门指令，返回开门类型的不同，相关操作也会有差异，但是开门成功后，一样需要上报访客留影。
-     * @param openDoor  开门数据
+     *
+     * @param openDoor 开门数据
      * @return
      */
     @Override
@@ -282,6 +302,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
     /**
      * 获取当前黑白名单curid当前操作步数，也就是本地数据库存储的黑白名单位数
+     *
      * @return
      */
     @Override
@@ -290,6 +311,3 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         return 0;
     }
 }
-/***
- *
- */

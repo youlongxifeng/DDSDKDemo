@@ -47,11 +47,12 @@ public class ServerCMD {
             if (json != null) {
                 String methodName = json.getString("cmd");
                 String uuid = json.getString("request_id");
-                String content = json.getString("response_params");
+
                 //if(guid==uuid)
                 if ("heart_beat".equalsIgnoreCase(methodName)) {
 
                 } else if ("open_doort".equalsIgnoreCase(methodName)) {//开门指令
+                    String content = json.getString("response_params");
                     open_doort(content);
                 } else if ("get_config".equalsIgnoreCase(methodName)) {//配置拉取指令
                     if (mContext != null) {
@@ -66,6 +67,7 @@ public class ServerCMD {
                     cardNew();
 
                 } else if ("randomPwd".equalsIgnoreCase(methodName)) {//网络密码指令
+                    String content = json.getString("response_params");
                     randomPwd(content);
 
 

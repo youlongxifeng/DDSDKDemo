@@ -1,22 +1,24 @@
 package com.dd.sdk.net.rgw.impl;
 
-import android.os.Build.VERSION_CODES;
-import android.support.annotation.RequiresApi;
+import com.dd.sdk.DDSDK;
+import com.dd.sdk.common.Base64;
+import com.dd.sdk.tools.LogUtils;
 
 import java.io.IOException;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Base64;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import okhttp3.Interceptor;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -29,8 +31,18 @@ import okhttp3.Response;
  * @class describe
  */
 
-public class S3Auth implements Interceptor {
+/**
+ * @author Administrator
+ * @name MyAmazonAPI
+ * @class name：com.demo.myamazonapi.api.interceptor
+ * @class describe
+ * @time 2018/6/20 10:08
+ * @change
+ * @class describe
+ */
 
+public class S3Auth implements Interceptor {
+    private final static String TAG = S3Auth.class.getSimpleName();
     private final String accessKey;
     private final String secretKey;
 
@@ -95,12 +107,16 @@ public class S3Auth implements Interceptor {
                     "response-content-disposition",
                     "response-content-encoding");*/
 
+    public S3Auth() {
+        this.accessKey = DDSDK.accessKey;
+        this.secretKey = DDSDK.secretKey;
+    }
+
     public S3Auth(String accessKey, String secretKey) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
     }
 
-    @RequiresApi(api = VERSION_CODES.O)
     private static String encodeBase64(byte[] data) {
         String base64 = Base64.getEncoder().encodeToString(data);
         if (base64.endsWith("\r\n")) {
@@ -113,14 +129,20 @@ public class S3Auth implements Interceptor {
         return base64;
     }
 
-    @RequiresApi(api = VERSION_CODES.O)
+
+
+
     @Override
     public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
         String httpVerb = request.method();
-        String date = DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now(ZoneId.of("GMT")));
+        RequestBody fileBody =request.body();
+        String date = "";
+        Calendar cd = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.UK);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT")); // 设置时区为GMT
+        date = sdf.format(cd.getTime());
         String resource = request.url().encodedPath();
-
         try {
             String subresource = request.url().queryParameterName(0);
             if (subResources.contains(subresource)) {
@@ -129,28 +151,21 @@ public class S3Auth implements Interceptor {
         } catch (Exception e) {
             // not match, do nothing here.
         }
-
+        LogUtils.i(TAG, "createBucket  =====  \n  date=" + date + "  \n resource=" + resource);
         String sign = sign(httpVerb, date, resource);
-
+        LogUtils.i(TAG, "createBucket  sign=" + sign.trim() + "\n  date=" + date.trim() + "  \n resource=" + resource.trim()+" fileBody="+fileBody.contentLength());
         request = request.newBuilder().header("Authorization", sign).header("Date", date).build();
 
         return chain.proceed(request);
     }
 
-    @RequiresApi(api = VERSION_CODES.O)
-    private String sign(String httpVerb, String date, String resource) {
+
+    public String sign(String httpVerb, String date, String resource) {
+//        LogUtils.i(TAG, "createBucket  httpVerb=" + httpVerb + "\n  date=" + date + "  \n resource=" + resource);
         return sign(httpVerb, "", "", date, resource, null);
     }
 
-    @RequiresApi(api = VERSION_CODES.O)
-    private String sign(
-            String httpVerb,
-            String contentMD5,
-            String contentType,
-            String date,
-            String resource,
-            Map<String, String> metas) {
-
+    private String sign(String httpVerb, String contentMD5, String contentType, String date, String resource, Map<String, String> metas) {
         StringBuilder stringToSign =
                 new StringBuilder(
                         httpVerb
@@ -176,11 +191,16 @@ public class S3Auth implements Interceptor {
             byte[] keyBytes = secretKey.getBytes("UTF8");
             SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA1");
             mac.init(signingKey);
-            byte[] signBytes = mac.doFinal(stringToSign.toString().getBytes("UTF8"));
+            byte[] signBytes = mac.doFinal(stringToSign.toString().trim().getBytes("UTF8"));
             String signature = encodeBase64(signBytes);
+//            LogUtils.i(TAG, "createBucket  accessKey=" + accessKey + "  \n signature=" + signature);
             return "AWS" + " " + accessKey + ":" + signature;
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("MAC CALC FAILED.");
         }
     }
+
+
+
 }
