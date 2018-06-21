@@ -107,12 +107,6 @@ public class NetworkHelp {
         builder.append("token").append(se).append(accessToken.getToken()).append(sc);
         builder.append("guid").append(se).append(guid).append(sc);
         builder.append("door_ver").append(se).append(door_ver);
-
-      /*  Map<String, String> params = new HashMap<>();
-        params.put("token", accessToken.getToken());
-        params.put("guid", guid);
-        params.put("door_ver", door_ver);*/
-
         LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.CONFIG) + builder.toString());
         JsonObjectRequest request = new JsonObjectRequest(Method.GET, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.CONFIG)+builder.toString(), /*new JSONObject(params),*/ listener, errlistener);
         DDVolley.addRequestQueue(request);
@@ -209,13 +203,3 @@ public class NetworkHelp {
 
 
 }
-/**
- * private final static void builderGeneral(StringBuilder builder) {
- * builder.append("device_type").append(se).append("1").append(sc);
- * builder.append("sign").append(se).append("").append(sc);
- * builder.append("expires").append(se).append("").append(sc);
- * builder.append("v").append(se).append(BuildConfig.VERSION_NAME).append(sc);
- * builder.append("vcode").append(se).append(BuildConfig.VERSION_CODE);
- * <p>
- * }
- */

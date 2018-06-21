@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 
 import com.dd.sdk.DDSDK;
+import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
@@ -42,6 +43,12 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         accessKey = "GXDYC1SINE72M7IMOEG3";
         secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
         endpoint = "http://172.21.20.102:7480";
+        NetConfig config=new NetConfig();
+        config.setdPort(8888);
+        config.setDomain("10.0.2.152");
+        /*DDSDK ddsdk=new DDSDKBuilder().initContext(this).sdkAccessKey("f2a9d153188d87e18adc233ca8ee30da").sdkSecretKey("564f939a8f8a5befa67d62bdf79e6fa5")
+                                      .setdeviceID("test20160822001").setNetConfig(config).setInstructionListener(this).build();*/
+
 
         DDSDK.getinstance().init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
         DDSDK.getinstance().amazonCloudinit(endpoint,  accessKey,secretKey);
