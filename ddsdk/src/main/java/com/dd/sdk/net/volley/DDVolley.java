@@ -62,10 +62,7 @@ public class DDVolley {
      * @param ddListener
      */
     public static void accessToken(final String app_id, final String secret_key, final DDListener ddListener) {
-
-
-
-        Runnable runnable=new Runnable() {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getInstance().getAccessToken(app_id, secret_key, new Response.Listener<JSONObject>() {
@@ -96,10 +93,7 @@ public class DDVolley {
      * @param mobile
      */
     public static void RegisterDevice(final Context context, final String macAddress, final String mobile, final DDListener ddListener) {
-
-
-
-        Runnable runnable=new Runnable() {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getRegisterDevice(context, macAddress, mobile, new Response.Listener<JSONObject>() {
@@ -128,11 +122,8 @@ public class DDVolley {
      * @param door_ver   5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      * @param ddListener
      */
-    public static void getConfig(final Context context,final String guid,final String door_ver, final DDListener ddListener) {
-
-
-
-        Runnable runnable=new Runnable() {
+    public static void getConfig(final Context context, final String guid, final String door_ver, final DDListener ddListener) {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getConfig(context, guid, door_ver, new Response.Listener<JSONObject>() {
@@ -142,7 +133,7 @@ public class DDVolley {
                                 Type t = new TypeToken<BaseResponse<DoorConfig>>() {
                                 }.getType();
                                 BaseResponse<DoorConfig> response = GsonUtils.getObject(jsonObject.toString(), t, baseResponse);
-                                LogUtils.i("getConfig   response="+response);
+                                LogUtils.i("getConfig   response=" + response);
                                 ddListener.onResponse(response);
 
                             }
@@ -150,7 +141,7 @@ public class DDVolley {
                         new Response.ErrorListener() {
                             @Override
                             public void onErrorResponse(VolleyError error) {
-                                LogUtils.i("getConfig   response=error="+error);
+                                LogUtils.i("getConfig   response=error=" + error);
                                 ddListener.onErrorResponse(error);
                             }
                         });
@@ -169,10 +160,8 @@ public class DDVolley {
      * @param config
      * @param ddListener
      */
-    public static void postConfig(final Context context,final String guid,final UpdoorconfigBean config, final DDListener ddListener) {
-
-
-        Runnable runnable=new Runnable() {
+    public static void postConfig(final Context context, final String guid, final UpdoorconfigBean config, final DDListener ddListener) {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.postConfig(context, guid, config, new Response.Listener<JSONObject>() {
@@ -199,10 +188,7 @@ public class DDVolley {
      * @param curid 当前操作步数
      */
     public static void getCardInfo(final Context context, final String guid, final int curid, final DDListener ddListener) {
-
-
-
-        Runnable runnable=new Runnable() {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getCardInfo(context, guid, curid, new Response.Listener<JSONObject>() {
@@ -238,11 +224,9 @@ public class DDVolley {
      * @param open_time    可选 13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
      * @return 上传成功返回true，失败返回false 请重传一次
      */
-    public static void uploadVideoOrPicture(final Context context,final FileType fileType,final String fileName,final String fileAddress,final String guid,final String device_type,final int operate_type,final String objectkey,
-                                            final long time,final String content,final String room_id,final String reason,final String open_time,  final DDListener ddListener) {
-
-
-        Runnable runnable=new Runnable() {
+    public static void uploadVideoOrPicture(final Context context, final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey,
+                                            final long time, final String content, final String room_id, final String reason, final String open_time, final DDListener ddListener) {
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.uploadVideoOrPicture(context, fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,

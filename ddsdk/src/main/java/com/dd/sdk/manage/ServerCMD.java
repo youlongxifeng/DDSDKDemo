@@ -36,13 +36,14 @@ public class ServerCMD {
     private static String mGuid;
     private static InstructionListener mInstructionListener;
     private static ConfigurationListener sConfigurationListener;
-    private Handler mHandler=new Handler();
+    private static Handler mHandler=null;
 
 
-    public static void setStringConect(String msg, Context context, String guid, InstructionListener listener,ConfigurationListener configurationListener) {
+    public static void setStringConect(String msg, Context context, String guid,Handler handler, InstructionListener listener,ConfigurationListener configurationListener) {
         mInstructionListener = listener;
         mContext = context;
         mGuid = guid;
+        mHandler=handler;
         sConfigurationListener=configurationListener;
         try {
             JSONObject json = new JSONObject(msg);
@@ -120,7 +121,14 @@ public class ServerCMD {
                         openDoor.setSn(sn);
                         openDoor.setFloor(floor);
                         if (mInstructionListener != null) {
-                            mInstructionListener.openDoor(openDoor);
+                            final RequestOpenDoor finalOpenDoor = openDoor;
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mInstructionListener.openDoor(finalOpenDoor);
+                                }
+                            });
+
                         }
                     }
                 } catch (Exception e) {
@@ -139,6 +147,7 @@ public class ServerCMD {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
+
                 if (mContext != null) {
                     int curid = 0;
                     if (mInstructionListener != null) {
@@ -166,9 +175,15 @@ public class ServerCMD {
                         Gson mGson = new Gson();
                         SubGsonClass<OpenDoorPwd> d = mGson.fromJson(content, t);
                         if (d.isSuccess() && d.hasData()) {
-                            OpenDoorPwd pwd = d.getData().get(0);
+                            final OpenDoorPwd pwd = d.getData().get(0);
                             if (mInstructionListener != null) {
-                                mInstructionListener.getNetworkCipher(pwd);
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mInstructionListener.getNetworkCipher(pwd);
+                                    }
+                                });
+
                             }
                         }
                     } catch (Exception e) {

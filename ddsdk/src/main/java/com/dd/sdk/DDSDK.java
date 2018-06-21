@@ -122,7 +122,7 @@ public class DDSDK {
     private IOnCommandListener mIOnCommandListener = new IOnCommandListener.Stub() {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {//
-            ServerCMD.setStringConect(msg, mContext, mGuid, mInstructionListener, mConfigurationListener);
+            ServerCMD.setStringConect(msg, mContext, mGuid,mHandler, mInstructionListener, mConfigurationListener);
         }
 
         @Override
@@ -460,7 +460,6 @@ public class DDSDK {
                                 mRequestState = false;
                             }
                         }
-
                         @Override
                         public void onErrorResponse(VolleyError volleyError) {
                             mRequestState = false;
