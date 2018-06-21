@@ -1,6 +1,7 @@
 package com.dd.sdk.manage;
 
 import android.content.Context;
+import android.os.Handler;
 
 import com.dd.sdk.listener.ConfigurationListener;
 import com.dd.sdk.listener.InstructionListener;
@@ -35,6 +36,7 @@ public class ServerCMD {
     private static String mGuid;
     private static InstructionListener mInstructionListener;
     private static ConfigurationListener sConfigurationListener;
+    private Handler mHandler=new Handler();
 
 
     public static void setStringConect(String msg, Context context, String guid, InstructionListener listener,ConfigurationListener configurationListener) {

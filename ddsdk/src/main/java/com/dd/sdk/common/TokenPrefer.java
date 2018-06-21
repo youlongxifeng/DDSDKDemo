@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
-import com.dd.sdk.DDSDK;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.tools.LogUtils;
 
@@ -31,7 +30,7 @@ public class TokenPrefer {
     public static AccessToken loadConfig(Context context) {
         AccessToken info = new AccessToken();
        try {
-           LogUtils.i("context  ="+(context!=null)+" "+ (DDSDK.getinstance().getContext()==null));
+           LogUtils.i("context  ="+(context!=null));
            if(context!=null){
                SharedPreferences share = context.getSharedPreferences("token_prefer", 0);
                if (info != null) {

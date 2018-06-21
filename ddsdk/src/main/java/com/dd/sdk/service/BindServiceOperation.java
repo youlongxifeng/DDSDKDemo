@@ -47,10 +47,8 @@ public class BindServiceOperation {
 
     /**
      * 绑定服务,新开一个进程，用于与服务器保持长连接，接收服务器下发的内容指令
-     *
-     * @param mContext
      */
-    public void bindService(Context mContext) {
+    public void bindService() {
         Intent intent = new Intent(mContext, MainService.class);
         String pagename = AppUtils.getPackageName(mContext);
         Bundle bundle = new Bundle();
@@ -58,13 +56,12 @@ public class BindServiceOperation {
         bundle.putString(MainService.PACKAGE_NAME, pagename);
         bundle.putString(MainService.GUID_NAME, mGuid);
         intent.putExtras(bundle);
-        boolean isbind = mContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-        if (isbind) {
-            LogUtils.i("bindService  mContext=" + mContext.getClass().getName());
-        } else {
-            LogUtils.i("bindService ");
-            if (mContext != null) {
-                bindService(mContext);
+        if (mContext != null) {
+            boolean isbind = mContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+            if (isbind) {
+                LogUtils.i("bindService  mContext=" + mContext.getClass().getName());
+            } else {
+                bindService();
             }
         }
 
@@ -79,7 +76,9 @@ public class BindServiceOperation {
             if (mICommandManager != null) {
                 mICommandManager.unRegisterListener(mIOnCommandListener);
             }
-            mContext.unbindService(serviceConnection);
+            if (mContext != null) {
+                mContext.unbindService(serviceConnection);
+            }
         } catch (RemoteException e) {
             e.printStackTrace();
         }

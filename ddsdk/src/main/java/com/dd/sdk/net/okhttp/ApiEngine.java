@@ -43,7 +43,7 @@ public class ApiEngine {
 
         //缓存
         int size = 1024 * 1024 * 100;
-        File cacheFile = new File(DDSDK.getinstance().getContext().getCacheDir(), "OkHttpCache");
+        File cacheFile = new File(DDSDK.getInstance().getContext().getCacheDir(), "OkHttpCache");
         Cache cache = new Cache(cacheFile, size);
 
         OkHttpClient client = new OkHttpClient.Builder()

@@ -1,11 +1,8 @@
 package com.dd.sdk;
 
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.Bundle;
-import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 
 import com.android.volley.VolleyError;
@@ -28,9 +25,8 @@ import com.dd.sdk.netbean.Floor;
 import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
-import com.dd.sdk.service.ICommandManager;
+import com.dd.sdk.service.BindServiceOperation;
 import com.dd.sdk.service.IOnCommandListener;
-import com.dd.sdk.service.MainService;
 import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.AppUtils;
 import com.dd.sdk.tools.GsonUtils;
@@ -61,15 +57,19 @@ public class DDSDK {
     private final static String CURID_VALUE = "curid";//设置默认的保存黑白名单的下发值
     private static NetworkState mNetworkState;
     private static InstructionListener mInstructionListener;
+    /**
+     * 上下文
+     */
     private static Context mContext;
+    /**
+     * token信息
+     */
     private static AccessToken accessToken;
-    private static ICommandManager mICommandManager;
     public static String accessKey, secretKey, endpoint, bucket_name;
     /**
      * 秘钥和key
      */
     private String sdkSecretKey, sdkAccessKey;
-    //  private static CompositeDisposable compositeDisposable = new CompositeDisposable();
     /**
      * 端口号和域名
      */
@@ -78,20 +78,33 @@ public class DDSDK {
      * 设备id
      */
     private static String mGuid;
+    private Handler mHandler = null;
+
+
+    private BindServiceOperation mBindServiceOperation;
 
     /**
      * 获取全局上下文
      */
     public Context getContext() {
         checkInitialize();
+        LogUtils.i("getContext======" + (mContext != null));
         return mContext;
     }
 
-    private static DDSDK mDDSDK = new DDSDK();
-
-    public static DDSDK getinstance() {
-        return mDDSDK;
+    private static class LazyHolder {
+        private static final DDSDK INSTANCE = new DDSDK();
     }
+
+    public DDSDK() {
+        Looper looper = Looper.getMainLooper(); //主线程的Looper对象
+        mHandler = new Handler(looper);
+    }
+
+    public static final DDSDK getInstance() {
+        return LazyHolder.INSTANCE;
+    }
+
 
     /**
      * 检测是否调用初始化方法
@@ -103,36 +116,13 @@ public class DDSDK {
     }
 
 
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            try {
-                mICommandManager = ICommandManager.Stub.asInterface(service);
-                //通过linkToDeath，可以给Binder设置一个死亡代理，当Binder死亡时，就会收到通知
-                service.linkToDeath(deathRecipient, 0);
-                mICommandManager.registerListener(mIOnCommandListener);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-            LogUtils.i("onServiceConnected===" + (mContext != null) + "  name=" + name);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            LogUtils.i("unbindService===" + (mContext != null) + "  name=" + name);
-
-        }
-
-
-    };
-
+    /**
+     * 接收来自服务端下发的指令
+     */
     private IOnCommandListener mIOnCommandListener = new IOnCommandListener.Stub() {
         @Override
-        public void onMessageResponse(String msg) throws RemoteException {
-
+        public void onMessageResponse(String msg) throws RemoteException {//
             ServerCMD.setStringConect(msg, mContext, mGuid, mInstructionListener, mConfigurationListener);
-
         }
 
         @Override
@@ -142,75 +132,19 @@ public class DDSDK {
     };
 
     /**
-     * Binder死亡代理
-     */
-    private IBinder.DeathRecipient deathRecipient = new IBinder.DeathRecipient() {
-                @Override
-                public void binderDied() {
-                    if (mICommandManager == null) {
-                        return;
-                    }
-                    mICommandManager.asBinder().unlinkToDeath(deathRecipient, 0);
-                    mICommandManager = null;
-                    // TODO 重新绑定
-                }
-            };
-
-    /**
-     * 绑定服务,新开一个进程，用于与服务器保持长连接，接收服务器下发的内容指令
-     *
-     * @param mContext
-     */
-    public void bindService(Context mContext) {
-        Intent intent = new Intent(mContext, MainService.class);
-        String pagename = AppUtils.getPackageName(mContext);
-        Bundle bundle = new Bundle();
-        bundle.putSerializable(MainService.CONFIG_BEAN, netConfig);
-        bundle.putString(MainService.PACKAGE_NAME, pagename);
-        bundle.putString(MainService.GUID_NAME, mGuid);
-        intent.putExtras(bundle);
-        boolean isbind = mContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
-        if (isbind) {
-            LogUtils.i("bindService  mContext=" + mContext.getClass().getName());
-        } else {
-            LogUtils.i("bindService ");
-            if (mContext != null) {
-                bindService(mContext);
-            }
-        }
-
-    }
-
-    /**
-     * 解绑服务
-     */
-    public void unbindService() {
-        try {
-            if (mICommandManager != null) {
-                mICommandManager.unRegisterListener(mIOnCommandListener);
-            }
-            mContext.unbindService(serviceConnection);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-
-    /**
      * 先写到一块儿，等会儿要分开
      *
      * @param context  应用
      * @param app_id   APP秘钥
-     * @param deviceID 设备id
+     * @param guid     设备id
      * @param listener 回调监听
      */
-    public void init(Context context, String app_id, String secret_key, String deviceID, String domainName, int port, InstructionListener listener) {
+    public void init(Context context, String app_id, String secret_key, String guid, String domainName, int port, InstructionListener listener) {
         mContext = context;
         LogUtils.init(null, true, true);
         mInstructionListener = listener;
         mNetworkState = new NetworkState(context);
-        DeviceInformation.getInstance().setGuid(deviceID);
+        DeviceInformation.getInstance().setGuid(guid);
         mGuid = DeviceInformation.getInstance().getGuid();
         netConfig = new NetConfig();
         netConfig.setdPort(port);
@@ -218,7 +152,8 @@ public class DDSDK {
         this.sdkSecretKey = secret_key;
         this.sdkAccessKey = app_id;
         accessToken();
-        bindService(mContext);
+        mBindServiceOperation = new BindServiceOperation(context, netConfig, guid, mIOnCommandListener);
+        mBindServiceOperation.bindService();
         bucket_name = "bucket_name";
     }
 
@@ -269,8 +204,9 @@ public class DDSDK {
             @Override
             public void onErrorResponse(VolleyError error) {
                 LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
-                mInstructionListener.tokenFile();
-                mContext = null;
+                if (mInstructionListener != null) {
+                    mInstructionListener.tokenFile();
+                }
             }
         });
 
@@ -286,11 +222,11 @@ public class DDSDK {
      * @param mobile
      */
     private void RegisterDevice(final Context context, final String macAddress, final String mobile) {
-        DDVolley.RegisterDevice(context, macAddress, mobile, new DDListener<JSONObject, VolleyError>() {
+        DDVolley.RegisterDevice(context, macAddress, mobile, new DDListener<RegisterResponse, VolleyError>() {
             @Override
-            public void onResponse(JSONObject response) {
-                LogUtils.i(TAG, "RegisterDevice    response=" + response);
-                RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
+            public void onResponse(RegisterResponse baseResponse) {
+                LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
+                // RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
                 switch (baseResponse.code) {
                     case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
                         getConfig(context, DeviceInformation.getInstance().getGuid(), "5000");
@@ -327,19 +263,13 @@ public class DDSDK {
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
     public void getConfig(final Context context, final String guid, final String door_ver) {
-        DDVolley.getConfig(context, guid, door_ver, new DDListener<JSONObject, VolleyError>() {
+        DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, VolleyError>() {
             @Override
-            public void onResponse(JSONObject response) {
-                LogUtils.i("getConfig========response=" + response);
-                BaseResponse<DoorConfig> baseResponse = new BaseResponse<>();
-                Type t = new TypeToken<BaseResponse<DoorConfig>>() {
-                }.getType();
-                BaseResponse<DoorConfig> response1 = GsonUtils.getObject(response.toString(), t, baseResponse);
-                LogUtils.i("getConfig========response1=" + response1);
-                if (response1 != null) {
-                    switch (baseResponse.code) {
+            public void onResponse(BaseResponse<DoorConfig> response) {
+                if (response != null) {
+                    switch (response.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
-                            DoorConfig deviceConfig = response1.getData();
+                            DoorConfig deviceConfig = response.getData();
                             bucket_name = deviceConfig.getBucket_name();
                             mInstructionListener.getconfig(deviceConfig); //将获取设备配置的内容发送到上层App
                             return;
@@ -409,7 +339,10 @@ public class DDSDK {
             mNetworkState.release();
             mNetworkState = null;
         }
-        unbindService();
+        if (mBindServiceOperation != null) {
+            mBindServiceOperation.unbindService();
+        }
+
         // compositeDisposable.clear();
     }
 
@@ -511,8 +444,9 @@ public class DDSDK {
                                         String content, String room_id, String reason, String open_time) {
         mRequestState = false;
         try {
+            LogUtils.i("uploadVideoOrPicture==" + mContext + "  ===" + DDSDK.getInstance().getContext());
             OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
-            DDVolley.uploadVideoOrPicture(DDSDK.getinstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
+            DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
                     content, room_id, reason, open_time, new DDListener<JSONObject, VolleyError>() {
                         @Override
                         public void onResponse(JSONObject object) {

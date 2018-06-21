@@ -9,7 +9,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 
 import com.dd.sdk.DDSDK;
-import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
@@ -31,27 +30,28 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements InstructionListener {
     public static String accessKey, secretKey, endpoint, bucket_name;
-    Context mContext;
+  private static   Context mContext;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        this.mContext = this;
+         mContext = this;
         LogUtils.init(null, true, true);
-        accessKey = "GXDYC1SINE72M7IMOEG3";
-        secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
-        endpoint = "http://172.21.20.102:7480";
-        NetConfig config=new NetConfig();
+
+       /* NetConfig config=new NetConfig();
         config.setdPort(8888);
-        config.setDomain("10.0.2.152");
+        config.setDomain("10.0.2.152");*/
         /*DDSDK ddsdk=new DDSDKBuilder().initContext(this).sdkAccessKey("f2a9d153188d87e18adc233ca8ee30da").sdkSecretKey("564f939a8f8a5befa67d62bdf79e6fa5")
                                       .setdeviceID("test20160822001").setNetConfig(config).setInstructionListener(this).build();*/
 
 
-        DDSDK.getinstance().init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
-        DDSDK.getinstance().amazonCloudinit(endpoint,  accessKey,secretKey);
+        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "test.sdk.door.doordu.com", 8018, this);
+        accessKey = "GXDYC1SINE72M7IMOEG3";
+        secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
+        endpoint = "http://172.21.20.102:7480";
+        DDSDK.getInstance().amazonCloudinit(endpoint,  accessKey,secretKey);
         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      * @param view
      */
     public void black_and_white_list(View view) {
-        DDSDK.getinstance().getCardInfo(mContext, "test20160822001", 0);
+        DDSDK.getInstance().getCardInfo(mContext, "test20160822001", 0);
     }
 
     /**
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      * @param view
      */
     public void get_configuration_information(View view) {
-        DDSDK.getinstance().getConfig(mContext, "test20160822001", "5000");
+        DDSDK.getInstance().getConfig(mContext, "test20160822001", "5000");
     }
 
     /**
@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //上报配置内容
-        DDSDK.getinstance().postDeviceConfig("test20160822001", updoorconfigBean);
+        DDSDK.getInstance().postDeviceConfig("test20160822001", updoorconfigBean);
     }
 
     /**
@@ -138,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
                 //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
 
                 try {
-                    DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+                    DDSDK.getInstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -176,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         File file = new File(fileAddress);
         LogUtils.i("fileAddress =" + fileAddress + " file=" + file + "  file=" + file.exists());
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-        boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+        boolean isUpload = DDSDK.getInstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
 
     }
 
@@ -191,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
     protected void onDestroy() {
         super.onDestroy();
         LogUtils.i("unbindService==Destroy=");
-        DDSDK.getinstance().release(this.getApplication());
+        DDSDK.getInstance().release(this.getApplication());
     }
 
 
@@ -232,7 +232,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //上报配置内容
-        DDSDK.getinstance().postDeviceConfig("test20160822001", updoorconfigBean);
+        DDSDK.getInstance().postDeviceConfig("test20160822001", updoorconfigBean);
         return new ResultBean();
     }
 
@@ -281,7 +281,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
         //开门操作完成后需要上报访客留影记录,上传成功返回true，失败返回false 请重传一次
-        boolean isUpload = DDSDK.getinstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+        boolean isUpload = DDSDK.getInstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
         return new ResultBean();
     }
 
