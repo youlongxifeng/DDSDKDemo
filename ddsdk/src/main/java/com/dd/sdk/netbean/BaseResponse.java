@@ -1,5 +1,7 @@
 package com.dd.sdk.netbean;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * @author Administrator
  * @name DDSDKDemo
@@ -19,8 +21,11 @@ public class BaseResponse<T> {
     public final static int ALREADY_BOUND=20010;
     public final static int REGISTER_FAIL=20011;
     public final static int ALREADY_REGISTERED=20012;
+    @SerializedName("code")
     public int code;
+    @SerializedName("data")
     public T data;
+    @SerializedName("msg")
     public String msg;
 
     public boolean isSuccess() {

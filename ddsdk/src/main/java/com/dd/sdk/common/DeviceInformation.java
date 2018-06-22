@@ -11,7 +11,7 @@ package com.dd.sdk.common;
  */
 
 public class DeviceInformation {
-    private String mGuid;//设备id
+   /* private String mGuid;//设备id
     private String mVersion;//版本号
 
     private   static DeviceInformation mInstance = new DeviceInformation();
@@ -33,14 +33,14 @@ public class DeviceInformation {
     }
 
     public String getVersion() {
-        /**
+        *//**
          * PackageManager pm = context.getPackageManager();//context为当前Activity上下文
          PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
          version = pi.versionName;
-         */
+         *//*
         if(mVersion==null){
             return "5.8.500.0";
         }
         return mVersion;
-    }
+    }*/
 }

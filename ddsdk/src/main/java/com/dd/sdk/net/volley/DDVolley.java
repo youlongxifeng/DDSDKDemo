@@ -92,11 +92,11 @@ public class DDVolley {
      * @param macAddress
      * @param mobile
      */
-    public static void RegisterDevice(final Context context, final String macAddress, final String mobile, final DDListener ddListener) {
+    public static void RegisterDevice(final Context context,final String gruid,final String macAddress, final String mobile, final DDListener ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                NetworkHelp.getRegisterDevice(context, macAddress, mobile, new Response.Listener<JSONObject>() {
+                NetworkHelp.getRegisterDevice(context,gruid, macAddress, mobile, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);

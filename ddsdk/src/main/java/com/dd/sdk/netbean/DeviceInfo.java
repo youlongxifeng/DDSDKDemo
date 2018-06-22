@@ -1,5 +1,7 @@
 package com.dd.sdk.netbean;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * @author Administrator
  * @name DoorDuProjectSDK
@@ -18,10 +20,15 @@ public class DeviceInfo {
      "type": 1,
      "vercode": 583950
      */
+    @SerializedName("name")
     private String name;
+    @SerializedName("ver")
     private String ver;
+    @SerializedName("uid")
     private String uid;
+    @SerializedName("type")
     private int type;
+    @SerializedName("vercode")
     private int vercode;
 
     public String getName() {

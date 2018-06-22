@@ -2,7 +2,6 @@ package com.dd.sdk;
 
 import android.content.Context;
 
-import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.common.NetworkState;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.InstructionListener;
@@ -84,8 +83,9 @@ public class DDSDKBuilder {
      * @return
      */
     public DDSDKBuilder setdeviceID(String deviceID) {
-        DeviceInformation.getInstance().setGuid(deviceID);
-        mGuid = DeviceInformation.getInstance().getGuid();
+       /* DeviceInformation.getInstance().setGuid(deviceID);
+        DeviceInformation.getInstance().getGuid();*/
+        mGuid =deviceID;
         return this;
     }
 

@@ -36,44 +36,44 @@ public class ServerCMD {
     private static String mGuid;
     private static InstructionListener mInstructionListener;
     private static ConfigurationListener sConfigurationListener;
-    private static Handler mHandler=null;
+    private static Handler mHandler = null;
 
 
-    public static void setStringConect(String msg, Context context, String guid,Handler handler, InstructionListener listener,ConfigurationListener configurationListener) {
+    public static void setStringConect(String msg, Context context, String guid, Handler handler, InstructionListener listener, ConfigurationListener configurationListener) {
         mInstructionListener = listener;
         mContext = context;
         mGuid = guid;
-        mHandler=handler;
-        sConfigurationListener=configurationListener;
+        mHandler = handler;
+        sConfigurationListener = configurationListener;
         try {
             JSONObject json = new JSONObject(msg);
             if (json != null) {
                 String methodName = json.getString("cmd");
                 String uuid = json.getString("request_id");
 
-                //if(guid==uuid)
-                if ("heart_beat".equalsIgnoreCase(methodName)) {
+                if (guid == uuid) {
+                    if ("heart_beat".equalsIgnoreCase(methodName)) {
 
-                } else if ("open_doort".equalsIgnoreCase(methodName)) {//开门指令
-                    String content = json.getString("response_params");
-                    open_doort(content);
-                } else if ("get_config".equalsIgnoreCase(methodName)) {//配置拉取指令
-                    if (mContext != null) {
-                        sConfigurationListener.getConfigCmd(mContext, mGuid, "5000");
+                    } else if ("open_doort".equalsIgnoreCase(methodName)) {//开门指令
+                        String content = json.getString("response_params");
+                        open_doort(content);
+                    } else if ("get_config".equalsIgnoreCase(methodName)) {//配置拉取指令
+                        if (mContext != null) {
+                            sConfigurationListener.getConfigCmd(mContext, mGuid, "5000");
+                        }
+                    } else if ("reboot".equalsIgnoreCase(methodName)) {// 重启指令
+                        if (mInstructionListener != null) {
+                            mInstructionListener.reBoot();
+                        }
+                    } else if ("cardNew".equalsIgnoreCase(methodName)) {//拉取黑白名单指令
+                        LogUtils.i(TAG, "onMessageResponse MSG=" + msg);
+                        cardNew();
+
+                    } else if ("randomPwd".equalsIgnoreCase(methodName)) {//网络密码指令
+                        String content = json.getString("response_params");
+                        randomPwd(content);
+
                     }
-                } else if ("reboot".equalsIgnoreCase(methodName)) {// 重启指令
-                    if (mInstructionListener != null) {
-                        mInstructionListener.reBoot();
-                    }
-                } else if ("cardNew".equalsIgnoreCase(methodName)) {//拉取黑白名单指令
-                    LogUtils.i(TAG, "onMessageResponse MSG=" + msg);
-                    cardNew();
-
-                } else if ("randomPwd".equalsIgnoreCase(methodName)) {//网络密码指令
-                    String content = json.getString("response_params");
-                    randomPwd(content);
-
-
                 }
             }
         } catch (JSONException e) {
@@ -83,6 +83,7 @@ public class ServerCMD {
 
     /**
      * 开门指令
+     *
      * @param content
      */
     private static void open_doort(final String content) {
@@ -133,7 +134,6 @@ public class ServerCMD {
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    //sendReponse("open_door", String.format("client error %s ,%s", content, e.getLocalizedMessage()), false);
                 }
             }
         };
@@ -143,7 +143,7 @@ public class ServerCMD {
     /**
      * 拉取黑白名单指令
      */
-    private static void cardNew(){
+    private static void cardNew() {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -162,6 +162,7 @@ public class ServerCMD {
 
     /**
      * 网络密码指令
+     *
      * @param content
      */
     private static void randomPwd(final String content) {

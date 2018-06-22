@@ -2,6 +2,8 @@ package com.dd.sdk.netbean;
 
 import android.text.TextUtils;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 
 /**
@@ -17,8 +19,10 @@ import java.io.Serializable;
 
 public class AccessToken implements Serializable {
     /**access_token**/
+    @SerializedName("token")
     public String token;
     /**有效期**/
+    @SerializedName("expires_in")
     public String expires_in;
 
     public String getToken() {

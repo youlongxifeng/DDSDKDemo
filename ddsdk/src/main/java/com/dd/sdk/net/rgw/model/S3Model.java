@@ -9,6 +9,7 @@ import io.reactivex.Observable;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 
 /**
  * @author Administrator
@@ -22,16 +23,16 @@ import okhttp3.RequestBody;
 
 public class S3Model {
 
-    public static Observable<String> createBucket( String bucketName, HashMap<String, String> parameters) {
+    public static Observable<ResponseBody> createBucket(String bucketName, HashMap<String, String> parameters) {
         return ApiEngine.getInstance().getApiAmazonService().createBucket( bucketName, parameters);//bucketName 桶的名称  创建桶
     }
 
-    public static Observable<String> getBucket( String bucket_name ) {
+    public static Observable<ResponseBody> getBucket( String bucket_name ) {
         return ApiEngine.getInstance().getApiAmazonService().getBucket(bucket_name);//bucketName 桶的名称  创建桶
     }
 
 
-    public static Observable<String> putBucketObject(String fileType,  String bucket_name, String fileName, String fileAddress, HashMap<String, String> parameters) {
+    public static Observable<ResponseBody> putBucketObject(String fileType,  String bucket_name, String fileName, String fileAddress, HashMap<String, String> parameters) {
         File file=new File(fileAddress);
         RequestBody requestBody= RequestBody.create(MediaType.parse("multipart/form-data"), file);
         MultipartBody.Part part = MultipartBody.Part.createFormData(fileType,file.getName(),requestBody);

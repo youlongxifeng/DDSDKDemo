@@ -9,7 +9,6 @@ import com.android.volley.Request.Method;
 import com.android.volley.Response;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.dd.sdk.DDSDK;
-import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.FileType;
@@ -79,13 +78,13 @@ public class NetworkHelp {
      * =1866e0df795fb7e&device_type=1&mobile_no=13410309446&v=3.0.6
      */
 
-    public static void getRegisterDevice(Context context, String macAddress, String mobile,
+    public static void getRegisterDevice(Context context,String  mGuid ,String macAddress, String mobile,
                                          Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
         Map<String, String> params = new HashMap<>();
         final DisplayMetrics res = context.getResources().getDisplayMetrics();
         AccessToken accessToken = TokenPrefer.loadConfig(context);
         params.put("token", accessToken.getToken());
-        params.put("guid", DeviceInformation.getInstance().getGuid());
+        params.put("guid", mGuid);
         params.put("width", String.valueOf(res.widthPixels));
         params.put("height", String.valueOf(res.heightPixels));
         params.put("cpu", Build.DEVICE);

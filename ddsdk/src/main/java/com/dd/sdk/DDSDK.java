@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.os.RemoteException;
 
 import com.android.volley.VolleyError;
-import com.dd.sdk.common.DeviceInformation;
 import com.dd.sdk.common.NetworkState;
 import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
@@ -122,7 +121,7 @@ public class DDSDK {
     private IOnCommandListener mIOnCommandListener = new IOnCommandListener.Stub() {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {//
-            ServerCMD.setStringConect(msg, mContext, mGuid,mHandler, mInstructionListener, mConfigurationListener);
+            ServerCMD.setStringConect(msg, mContext, mGuid, mHandler, mInstructionListener, mConfigurationListener);
         }
 
         @Override
@@ -144,8 +143,6 @@ public class DDSDK {
         LogUtils.init(null, true, true);
         mInstructionListener = listener;
         mNetworkState = new NetworkState(context);
-        DeviceInformation.getInstance().setGuid(guid);
-        mGuid = DeviceInformation.getInstance().getGuid();
         netConfig = new NetConfig();
         netConfig.setdPort(port);
         netConfig.setDomain(domainName);
@@ -165,9 +162,9 @@ public class DDSDK {
      * @param msecretKey
      */
     public void amazonCloudinit(String mendpoint, String maccessKey, String msecretKey) {
-        endpoint = mendpoint;
-        secretKey = maccessKey;
-        accessKey = msecretKey;
+        this.endpoint = mendpoint;
+        this.secretKey = maccessKey;
+        this.accessKey = msecretKey;
     }
 
 
@@ -222,14 +219,14 @@ public class DDSDK {
      * @param mobile
      */
     private void RegisterDevice(final Context context, final String macAddress, final String mobile) {
-        DDVolley.RegisterDevice(context, macAddress, mobile, new DDListener<RegisterResponse, VolleyError>() {
+        DDVolley.RegisterDevice(context, mGuid, macAddress, mobile, new DDListener<RegisterResponse, VolleyError>() {
             @Override
             public void onResponse(RegisterResponse baseResponse) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
                 // RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
                 switch (baseResponse.code) {
                     case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
-                        getConfig(context, DeviceInformation.getInstance().getGuid(), "5000");
+                        getConfig(context, mGuid, "5000");
                         return;
                     case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
                         RegisterDevice(context, macAddress, mobile);//注册失败重新注册
@@ -271,16 +268,28 @@ public class DDSDK {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
                             DoorConfig deviceConfig = response.getData();
                             bucket_name = deviceConfig.getBucket_name();
+                            SPUtils.put("bucket_name", bucket_name);
                             mInstructionListener.getconfig(deviceConfig); //将获取设备配置的内容发送到上层App
                             return;
                         case RegisterResponse.NO_REGISTER://20011	设备未注册
                             if (mInstructionListener != null) {
-                                mInstructionListener.noRegister();//设备未绑定，需要重新注册
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mInstructionListener.noRegister();//设备未绑定，需要重新注册
+                                    }
+                                });
+
                             }
                             break;
                         case RegisterResponse.NO_BOUND://20012设备w未绑定
                             if (mInstructionListener != null) {
-                                mInstructionListener.noBinding();//设备未绑定，需要重新绑定
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mInstructionListener.noBinding();//设备未绑定，需要重新绑定
+                                    }
+                                });
                             }
                             break;
                         case RegisterResponse.TOKEN_EXPIRED://token过期
@@ -408,8 +417,8 @@ public class DDSDK {
                 ResultBean resultBean = mInstructionListener.getBlackAndWhiteList(cardInfos);//上报到上层应用处理数据
                 if (resultBean.isSuccess()) {//上层APP数据处理成功
                     if (deviceConfig != null && deviceConfig.count() == 500) {//约定每次最大返回500条
-                        getCardInfo(context, guid, curid);
                         int oldguid = SPUtils.get(CURID_VALUE, curid);
+                        getCardInfo(context, guid, oldguid);
                         SPUtils.put(CURID_VALUE, curid + oldguid);
                     } else {
                         SPUtils.put(CURID_VALUE, 0);
@@ -444,7 +453,7 @@ public class DDSDK {
                                         String content, String room_id, String reason, String open_time) {
         mRequestState = false;
         try {
-            LogUtils.i("uploadVideoOrPicture==" + mContext + "  ===" + DDSDK.getInstance().getContext());
+            bucket_name = SPUtils.get("bucket_name", bucket_name);
             OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
             DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
                     content, room_id, reason, open_time, new DDListener<JSONObject, VolleyError>() {
@@ -460,6 +469,7 @@ public class DDSDK {
                                 mRequestState = false;
                             }
                         }
+
                         @Override
                         public void onErrorResponse(VolleyError volleyError) {
                             mRequestState = false;

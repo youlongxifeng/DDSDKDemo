@@ -36,5 +36,109 @@ public class WebrtcConfig {
     private int rtcp_fb;
     private int scheme;
 
+    public String getSip_server() {
+        return sip_server;
+    }
 
+    public void setSip_server(String sip_server) {
+        this.sip_server = sip_server;
+    }
+
+    public int getTls_port() {
+        return tls_port;
+    }
+
+    public void setTls_port(int tls_port) {
+        this.tls_port = tls_port;
+    }
+
+    public int getTcp_port() {
+        return tcp_port;
+    }
+
+    public void setTcp_port(int tcp_port) {
+        this.tcp_port = tcp_port;
+    }
+
+    public int getUdp_port() {
+        return udp_port;
+    }
+
+    public void setUdp_port(int udp_port) {
+        this.udp_port = udp_port;
+    }
+
+    public int getIce() {
+        return ice;
+    }
+
+    public void setIce(int ice) {
+        this.ice = ice;
+    }
+
+    public String getCoturn_server() {
+        return coturn_server;
+    }
+
+    public void setCoturn_server(String coturn_server) {
+        this.coturn_server = coturn_server;
+    }
+
+    public String getCoturn_port() {
+        return coturn_port;
+    }
+
+    public void setCoturn_port(String coturn_port) {
+        this.coturn_port = coturn_port;
+    }
+
+    public String getCoturn_user() {
+        return coturn_user;
+    }
+
+    public void setCoturn_user(String coturn_user) {
+        this.coturn_user = coturn_user;
+    }
+
+    public String getCoturn_pass() {
+        return coturn_pass;
+    }
+
+    public void setCoturn_pass(String coturn_pass) {
+        this.coturn_pass = coturn_pass;
+    }
+
+    public int getRtcp_fb() {
+        return rtcp_fb;
+    }
+
+    public void setRtcp_fb(int rtcp_fb) {
+        this.rtcp_fb = rtcp_fb;
+    }
+
+    public int getScheme() {
+        return scheme;
+    }
+
+    public void setScheme(int scheme) {
+        this.scheme = scheme;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("WebrtcConfig{");
+        sb.append("sip_server='").append(sip_server).append('\'');
+        sb.append(", tls_port=").append(tls_port);
+        sb.append(", tcp_port=").append(tcp_port);
+        sb.append(", udp_port=").append(udp_port);
+        sb.append(", ice=").append(ice);
+        sb.append(", coturn_server='").append(coturn_server).append('\'');
+        sb.append(", coturn_port='").append(coturn_port).append('\'');
+        sb.append(", coturn_user='").append(coturn_user).append('\'');
+        sb.append(", coturn_pass='").append(coturn_pass).append('\'');
+        sb.append(", rtcp_fb=").append(rtcp_fb);
+        sb.append(", scheme=").append(scheme);
+        sb.append('}');
+        return sb.toString();
+    }
 }

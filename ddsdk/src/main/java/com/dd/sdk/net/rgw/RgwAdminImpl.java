@@ -2,8 +2,10 @@ package com.dd.sdk.net.rgw;
 
 import android.text.TextUtils;
 
+import com.dd.sdk.net.rgw.impl.ErrorUtils;
 import com.dd.sdk.net.rgw.impl.RgwAdminException;
 import com.dd.sdk.net.rgw.impl.S3Auth;
+import com.dd.sdk.tools.LogUtils;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -14,6 +16,8 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /**
  * @author Administrator
@@ -32,15 +36,12 @@ public class RgwAdminImpl implements RgwAdmin {
 
     public RgwAdminImpl(String accessKey, String secretKey, String endpoint) {
         validEndpoint(endpoint);
-        this.client = //new OkHttpClient().newBuilder().addInterceptor(new S3Auth(accessKey, secretKey)).build();
-                new OkHttpClient.Builder()
-                        .connectTimeout(12, TimeUnit.SECONDS)
-                        .writeTimeout(12, TimeUnit.SECONDS)
-                        .writeTimeout(12, TimeUnit.SECONDS)
-                        //.cookieJar(new CookiesManager())//在OkHttpClient创建时，传入这个CookieJar的实现，就能完成对Cookie的自动管理了
-                        //.addNetworkInterceptor(new NetworkInterceptor())// 将有网络拦截器当做网络拦截器添加
-                        .addInterceptor(new S3Auth(accessKey, secretKey))
-                        .build();
+        this.client = new OkHttpClient.Builder()
+                .connectTimeout(12, TimeUnit.SECONDS)
+                .writeTimeout(12, TimeUnit.SECONDS)
+                .writeTimeout(12, TimeUnit.SECONDS)
+                .addInterceptor(new S3Auth(accessKey, secretKey))
+                .build();
         this.endpoint = endpoint;
 
     }
@@ -143,8 +144,7 @@ public class RgwAdminImpl implements RgwAdmin {
      */
 
     private String safeCall(Request request) {
-
-/*
+        ResponseBody body = null;
         try (Response response = client.newCall(request).execute()) {
             if (response.code() == 404) {
                 return null;
@@ -152,7 +152,7 @@ public class RgwAdminImpl implements RgwAdmin {
             if (!response.isSuccessful()) {
                 throw ErrorUtils.parseError(response);
             }
-            ResponseBody body = response.body();
+            body = response.body();
             if (body != null) {
                 String bodyStr = response.body().string();
                 LogUtils.i("bodyStr=====" + bodyStr);
@@ -162,8 +162,8 @@ public class RgwAdminImpl implements RgwAdmin {
             }
         } catch (IOException e) {
             throw new RgwAdminException(500, "IOException", e);
-        }*/
-        return null;
+        }
+
     }
 
 

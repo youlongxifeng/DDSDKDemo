@@ -36,7 +36,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 
 public class NettyClient {
-    private final static String TAG=NettyClient.class.getSimpleName();
+    private final static String TAG = NettyClient.class.getSimpleName();
     /**
      * 是否连接
      */
@@ -48,15 +48,15 @@ public class NettyClient {
     private SocketChannel socketChannel;
     private ChannelFuture channelFuture = null;
 
-    public NettyClient(NettyListener nettyListener, int port, String host,String guid) {
+    public NettyClient(NettyListener nettyListener, int port, String host, String guid) {
         this.listener = nettyListener;
-        this.mGuid=guid;
-       this.port = port;
+        this.mGuid = guid;
+        this.port = port;
         this.host = host;
 
-      /*  this.port = 9501;//正式版要修改的
-        this.host = "test.swoole.doordu.com";////正式版要修改的*/
-        Log.i(TAG,"connect===port="+port+"   host="+host);
+        this.port = 5611;//正式版要修改的
+        this.host = "172.21.21.25";////正式版要修改的
+        Log.i(TAG, "connect===port=" + port + "   host=" + host);
     }
 
     /**
@@ -77,7 +77,7 @@ public class NettyClient {
                     socketChannel.pipeline().addLast(new IdleStateHandler(20, 10, 0));
                     socketChannel.pipeline().addLast(new StringEncoder(Charset.forName("UTF-8")));
                     socketChannel.pipeline().addLast(new StringDecoder(Charset.forName("UTF-8")));
-                    socketChannel.pipeline().addLast(new NettyClientHandler(mGuid,listener));
+                    socketChannel.pipeline().addLast(new NettyClientHandler(mGuid, listener));
 
                   /*  SslContext sslCtx = SslContextBuilder.forClient()
                                                          .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
@@ -90,7 +90,7 @@ public class NettyClient {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Log.i(TAG,"connect===e="+e);
+            Log.i(TAG, "connect===e=" + e);
         } finally {
 
         }
@@ -105,7 +105,7 @@ public class NettyClient {
         ChannelFutureListener channelFutureListener = new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                Log.i(TAG,"channelFuture===="+channelFuture.isSuccess());
+                Log.i(TAG, "channelFuture====" + channelFuture.isSuccess());
                 if (channelFuture.isSuccess()) {
                     socketChannel = (SocketChannel) channelFuture.channel();
                     isConnect = true;
@@ -123,16 +123,16 @@ public class NettyClient {
      * 断开重连 还需要优化
      */
     public void reconnect() {
-            if (socketChannel != null && channelFuture.channel().isOpen()) {
-                socketChannel.close();
-            }
+        if (socketChannel != null && channelFuture.channel().isOpen()) {
+            socketChannel.close();
+        }
         connect();
     }
 
     public void close() {
-            if (socketChannel != null && socketChannel.isOpen()) {
-                socketChannel.close();
-                    }
+        if (socketChannel != null && socketChannel.isOpen()) {
+            socketChannel.close();
+        }
     }
 
     /**
@@ -158,17 +158,18 @@ public class NettyClient {
         boolean flag = socketChannel != null && isConnect;
         if (flag) {
             //ByteBuf buf = Unpooled.copiedBuffer(data);
-            String  str=new String(data) +"*"+ System.getProperty("line.separator");
+            String str = new String(data) + "*" + System.getProperty("line.separator");
             ByteBuf buf = Unpooled.copiedBuffer(str.getBytes());
             socketChannel.writeAndFlush(buf).addListener(listener);
         }
         return flag;
     }
+
     protected void sendReponse(String cmd, String content, boolean success) {
 
     }
 
-    public static String builder(String cmd, String content, String sn,String guid, boolean success) {
+    public static String builder(String cmd, String content, String sn, String guid, boolean success) {
         JSONObject o = new JSONObject();
         try {
             o.put("cmd", cmd);

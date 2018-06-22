@@ -4,7 +4,8 @@ import java.util.HashMap;
 
 import io.reactivex.Observable;
 import okhttp3.MultipartBody;
-import retrofit2.http.Field;
+import okhttp3.ResponseBody;
+import retrofit2.http.Multipart;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
@@ -34,23 +35,25 @@ public interface ApiAmazonService {
     /**
      * 创建桶
      */
-    @PUT("/{bucket}")
-    Observable<String> createBucket(@Path("bucket") String bucket, @QueryMap HashMap<String, String> map);
+    @PUT("{bucket}")
+    Observable<ResponseBody> createBucket(@Path("bucket") String bucket, @QueryMap HashMap<String, String> map);
 
     /**
      * 获取桶
      * @param bucket
      * @return
      */
+    // @FormUrlEncoded
     @PUT("{bucket}")
-    Observable<String> getBucket(@Path("bucket") String bucket);
+    Observable<ResponseBody> getBucket(@Path("bucket") String bucket);
 
 
     /**
      * 上传文件
      */
+    @Multipart
     @PUT("/{bucket}/{object}")
-    Observable<String> putBucketObject(@Path("bucket") String bucket/**桶名称*/, @Field("object") String object,/**文件名称*/
-                                       @Part MultipartBody.Part file,//上传文件
-                                       @QueryMap HashMap<String, String> map/**map信息*/);
+    Observable<ResponseBody> putBucketObject(@Path("bucket") String bucket/**桶名称*/, @Path("object") String object,/**文件名称*/
+                                             @Part MultipartBody.Part file,//上传文件
+                                             @QueryMap HashMap<String, String> map/**map信息*/);
 }

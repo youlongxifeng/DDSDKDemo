@@ -1,5 +1,6 @@
 package com.guangming.ddsdkdemo;
 
+import android.Manifest;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
@@ -22,16 +23,20 @@ import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.LogUtils;
+import com.dd.sdk.tools.PermissionUtil;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements InstructionListener {
     public static String accessKey, secretKey, endpoint, bucket_name;
   private static   Context mContext;
-
+    private final int REQUEST_CODE_CAMERA = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
                                       .setdeviceID("test20160822001").setNetConfig(config).setInstructionListener(this).build();*/
 
 
-        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "test.sdk.door.doordu.com", 8018, this);
+        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619, this);
         accessKey = "GXDYC1SINE72M7IMOEG3";
         secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
         endpoint = "http://172.21.20.102:7480";
@@ -56,10 +61,19 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
             @Override
             public void onClick(View v) {
                 //DDApplication.unbindService();
+
+                PermissionUtil.requestPerssions(MainActivity.this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA, Manifest.permission.READ_SMS, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE);
+                PermissionUtil.getCameraPermissions(MainActivity.this, REQUEST_CODE_CAMERA);
             }
         });
+        ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
+        scheduledThreadPool.scheduleAtFixedRate(new Runnable() {
 
-
+            @Override
+            public void run() {
+                LogUtils.i("ScheduledExecutorService   delay 1 seconds, and excute every 3 seconds  Name="+Thread.currentThread().getName());
+            }
+        }, 1, 3, TimeUnit.SECONDS);
     }
 
     /**

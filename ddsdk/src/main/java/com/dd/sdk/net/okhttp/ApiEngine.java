@@ -77,7 +77,9 @@ public class ApiEngine {
         retrofitAmazon = new Retrofit.Builder()
                 .baseUrl(DDSDK.endpoint)
                 .client(clientAmazon)
+                //可以接收自定义的Gson，当然也可以不传
                 .addConverterFactory(GsonConverterFactory.create())
+                // 针对rxjava2.x
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
 

@@ -80,4 +80,16 @@ public class VideoPictureBean implements Serializable {
 
         return bos.toByteArray();
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VideoPictureBean{");
+        sb.append("mName='").append(mName).append('\'');
+        sb.append(", mFileName='").append(mFileName).append('\'');
+        sb.append(", mMime='").append(mMime).append('\'');
+        sb.append(", bucketName='").append(bucketName).append('\'');
+        sb.append(", file='").append(file).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }
