@@ -20,15 +20,12 @@ import com.dd.sdk.netbean.DeviceInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
 import com.dd.sdk.netbean.OpenDoorPwd;
-import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.LogUtils;
 import com.dd.sdk.tools.PermissionUtil;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -46,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         setContentView(R.layout.activity_main);
         mContext = this;
         LogUtils.init(null, true, true);
-        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619,"13787138669", this);
+        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619, "13787138669", this);
         accessKey = "GXDYC1SINE72M7IMOEG3";
         secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
         endpoint = "http://172.21.20.102:7480";
@@ -68,12 +65,6 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
                 LogUtils.i("ScheduledExecutorService   delay 1 seconds, and excute every 3 seconds  Name="+Thread.currentThread().getName());
             }
         }, 1, 3, TimeUnit.SECONDS);*/
-
-
-
-
-
-
 
 
     }
@@ -212,28 +203,10 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
     @Override
-    public ResultBean successRegister() {
-        return null;
-    }
-
-    @Override
     public ResultBean noRegister() {
         LogUtils.i("设备未注册===========");
         return new ResultBean();
     }
-
-    @Override
-    public ResultBean responseRegister(RegisterResponse response) {
-        return null;
-    }
-
-    @Override
-    public ResultBean failRegister(RequestError response) {
-        LogUtils.i("设备注册失败===========");
-        return new ResultBean();
-    }
-
-
 
     @Override
     public ResultBean noBinding() {
@@ -272,25 +245,6 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         return new ResultBean();
     }
 
-    @Override
-    public ResultBean getconfigResponse(BaseResponse<DoorConfig> response) {
-        return null;
-    }
-
-    @Override
-    public ResultBean getconfigFail(RequestError doorConfig) {
-        return null;
-    }
-
-    @Override
-    public ResultBean postDeviceConfigResponse(JSONObject response) {
-        return null;
-    }
-
-    @Override
-    public ResultBean postDeviceConfigFail(RequestError volleyError) {
-        return null;
-    }
 
     @Override
     public ResultBean reBoot() {
@@ -353,17 +307,6 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         return resultBean;
     }
 
-    @Override
-    public ResultBean getBlackAndWhiteSuccess(BaseResponse<CardInfo<Floor>> response) {
-        return null;
-    }
-
-
-
-    @Override
-    public ResultBean getBlackAndWhiteListFail(RequestError requestError) {
-        return null;
-    }
 
     @Override
     public ResultBean getNetworkCipher(OpenDoorPwd pwd) {
@@ -372,6 +315,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
     @Override
     public ResultBean tokenFile() {
+        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619, "13787138669", this);
         return new ResultBean();
     }
 
@@ -384,5 +328,15 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
     public int nameListCurid() {
         //这里需要操作数据库，
         return 0;
+    }
+
+    @Override
+    public void onResponse(BaseResponse response) {
+        LogUtils.i("response=" + response);
+    }
+
+    @Override
+    public void onErrorResponse(RequestError volleyError) {
+        LogUtils.i("volleyError=" + volleyError);
     }
 }

@@ -31,14 +31,9 @@ import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.service.BindServiceOperation;
 import com.dd.sdk.service.IOnCommandListener;
 import com.dd.sdk.thread.ThreadManager;
-import com.dd.sdk.tools.GsonUtils;
 import com.dd.sdk.tools.LogUtils;
 import com.dd.sdk.tools.SPUtils;
-import com.google.mgson.reflect.TypeToken;
 
-import org.json.JSONObject;
-
-import java.lang.reflect.Type;
 import java.util.List;
 
 
@@ -189,13 +184,11 @@ public class DDSDK {
                 try {
                     LogUtils.i(TAG, "init onResponse  response==" + response);
                     if (response.isSuccess()) {
-                        accessToken = response.data;// GsonUtils.getObject(response.data.toString(), AccessToken.class);
+                        accessToken = response.data;
                         TokenPrefer.saveConfig(mContext, accessToken);
                         RegisterDevice(mContext, TextUtils.isEmpty(mMobile) ? "13787138669" : mMobile);
                     } else {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.noBinding();
-                        }
+                        tokenFile();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -205,10 +198,7 @@ public class DDSDK {
 
             @Override
             public void onErrorResponse(RequestError error) {
-                LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
-                if (mInstructionListener != null) {
-                    mInstructionListener.tokenFile();
-                }
+                tokenFile();
             }
         });
 
@@ -223,62 +213,40 @@ public class DDSDK {
      * @param mobile  电话号码
      */
     private void RegisterDevice(final Context context, final String mobile) {
-        DDVolley.RegisterDevice(context, mGuid, mobile, new DDListener<RegisterResponse, RequestError>() {
+        LogUtils.i("RegisterDevice=============");
+        DDVolley.RegisterDevice(context, mGuid, mobile, new DDListener<BaseResponse, RequestError>() {
             @Override
-            public void onResponse(final RegisterResponse baseResponse) {
+            public void onResponse(final BaseResponse baseResponse) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
                 switch (baseResponse.code) {
                     case RegisterResponse.RESPONSE_SUCCESS:
-                        getConfig(context, mGuid, "5000");
+                         getConfig(context, mGuid, "5000");
                         break;
                     case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
-                        getConfig(context, mGuid, "5000");
-                        return;
+                         getConfig(context, mGuid, "5000");
+                        break;
                     case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
                         RegisterDevice(context, mobile);//注册失败重新注册
                         break;
                     case RegisterResponse.ALREADY_REGISTERED://20012设备已注册,但是设备未绑定
-                        mHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mInstructionListener != null) {
-                                    mInstructionListener.noBinding();
-                                }
-                            }
-                        });
+                        noBinding();
                         break;
                     case RegisterResponse.TOKEN_EXPIRED://token过期
                         AccessToken accessToken = accessToken();
                         if (accessToken != null) {
                             RegisterDevice(context, mobile);
                         }
-
-                        return;
+                        break;
                     default:
                         break;
                 }
-
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.responseRegister(baseResponse);
-                        }
-                    }
-                });
+                onResponse(baseResponse);
             }
 
             @Override
             public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + volleyError);
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.failRegister(volleyError);
-                        }
-                    }
-                });
+                onErrorResponse(volleyError);
             }
         });
 
@@ -292,65 +260,42 @@ public class DDSDK {
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
     public void getConfig(final Context context, final String guid, final String door_ver) {
+        LogUtils.i("getConfig   response=");
         DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, RequestError>() {
             @Override
             public void onResponse(final BaseResponse<DoorConfig> response) {
+                LogUtils.i("getConfig   response="+response);
                 if (response != null) {
                     switch (response.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
                             DoorConfig deviceConfig = response.getData();
                             bucket_name = deviceConfig.getBucket_name();
                             SPUtils.put("bucket_name", bucket_name);
-                            mInstructionListener.getconfig(deviceConfig); //将获取设备配置的内容发送到上层App
-                            return;
+                            getconfig(deviceConfig); //将获取设备配置的内容发送到上层App
+                            break;
                         case RegisterResponse.NO_REGISTER://20011	设备未注册
-                            if (mInstructionListener != null) {
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mInstructionListener.noRegister();//设备未绑定，需要重新注册
-                                    }
-                                });
-
-                            }
+                            noRegister();//设备未绑定，需要重新注册
                             break;
                         case RegisterResponse.NO_BOUND://20012设备w未绑定
-                            if (mInstructionListener != null) {
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        mInstructionListener.noBinding();//设备未绑定，需要重新绑定
-                                    }
-                                });
-                            }
+                            noBinding();//设备未绑定，需要重新绑定
                             break;
                         case RegisterResponse.TOKEN_EXPIRED://token过期
                             AccessToken accessToken = accessToken();
                             if (accessToken != null) {
-                                getConfig(context, guid, door_ver);
+                               getConfig(context, guid, door_ver);
                             }
                             break;
                         default:
                             return;
                     }
                 }
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mInstructionListener.getconfigResponse(response);//设备未绑定，需要重新绑定
-                    }
-                });
+                onResponse(response);//设备未绑定，需要重新绑定
             }
 
             @Override
             public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i("EEE", "getConfig error==" + volleyError);
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mInstructionListener.getconfigFail(volleyError);//设备未绑定，需要重新绑定
-                    }
-                });
+                onErrorResponse(volleyError);//设备未绑定，需要重新绑定
             }
         });
 
@@ -365,20 +310,13 @@ public class DDSDK {
      */
     public ResultBean postDeviceConfig(String guid, UpdoorconfigBean config) {
         final ResultBean resultBean = new ResultBean();
-        DDVolley.postConfig(mContext, guid, config, new DDListener<JSONObject, RequestError>() {
+        DDVolley.postConfig(mContext, guid, config, new DDListener<BaseResponse, RequestError>() {
             @Override
-            public void onResponse(final JSONObject response) {
+            public void onResponse(final BaseResponse response) {
                 LogUtils.i("postDeviceConfig   response=" + response);
                 resultBean.setErrCode(200);
                 resultBean.setErrMsg("信息上报成功");
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.postDeviceConfigResponse(response);
-                        }
-                    }
-                });
+                onResponse(response);
 
             }
 
@@ -386,15 +324,7 @@ public class DDSDK {
             public void onErrorResponse(final RequestError volleyError) {
                 resultBean.setErrCode(-1);
                 resultBean.setErrMsg("信息上报失败");
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.postDeviceConfigFail(volleyError);
-                        }
-                    }
-                });
-
+                onErrorResponse(volleyError);
             }
         });
         return resultBean;
@@ -430,51 +360,31 @@ public class DDSDK {
     public List<CardInfo<Floor>> getCardInfo(final Context context, final String guid, final int curid) {
         DDVolley.getCardInfo(context, guid, curid, new DDListener<BaseResponse<CardInfo<Floor>>, RequestError>() {
             @Override
-            public void onResponse(final BaseResponse<CardInfo<Floor>> response) {
-                if (response != null) {
-                    switch (response.code) {
-                        case RegisterResponse.RESPONSE_SUCCESS://返回成功
-                            CardInfo deviceConfig = response.getData();
-                            checkFinishData(context, guid, curid, deviceConfig);
-                            return;
-                        case RegisterResponse.NO_REGISTER://20011	设备未注册
-
-                            break;
-                        case RegisterResponse.NO_BOUND://20012设备w未绑定
-
-                            break;
-                        case RegisterResponse.TOKEN_EXPIRED://token过期
-                            AccessToken accessToken = accessToken();
-                            if (accessToken != null) {
-                                getCardInfo(context, guid, curid);
-                            }
-                            break;
-                    }
-                } else {
-                    //需要做后续处理
-                }
-
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.getBlackAndWhiteSuccess(response);
+            public void onResponse(BaseResponse<CardInfo<Floor>> response) {
+                switch (response.code) {
+                    case RegisterResponse.RESPONSE_SUCCESS://返回成功
+                        CardInfo deviceConfig = response.getData();
+                        checkFinishData(context, guid, curid, deviceConfig);
+                        break;
+                    case RegisterResponse.NO_REGISTER://20011	设备未注册
+                        noRegister();
+                        break;
+                    case RegisterResponse.NO_BOUND://20012设备w未绑定
+                        noBinding();
+                        break;
+                    case RegisterResponse.TOKEN_EXPIRED://token过期
+                        AccessToken accessToken = accessToken();
+                        if (accessToken != null) {
+                            getCardInfo(context, guid, curid);
                         }
-                    }
-                });
+                        break;
+                }
+                onResponse(response);
             }
 
             @Override
-            public void onErrorResponse(final RequestError volleyError) {
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mInstructionListener != null) {
-                            mInstructionListener.getBlackAndWhiteListFail(volleyError);
-                        }
-                    }
-                });
-
+            public void onErrorResponse(RequestError volleyError) {
+                onErrorResponse(volleyError);
             }
         });
         return null;
@@ -529,81 +439,48 @@ public class DDSDK {
      */
     static boolean mRequestState;
 
-    public boolean uploadVideoOrPicture(FileType fileType, String fileName, String fileAddress, String guid, String device_type, int operate_type, String objectkey, long time,
-                                        String content, String room_id, String reason, String open_time) {
+    public boolean uploadVideoOrPicture(final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey, final long time,
+                                        final String content, final String room_id, final String reason, final String open_time) {
         mRequestState = false;
-        try {
+
             bucket_name = SPUtils.get("bucket_name", bucket_name);
             OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
             DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
-                    content, room_id, reason, open_time, new DDListener<JSONObject, RequestError>() {
+                    content, room_id, reason, open_time, new DDListener<BaseResponse, RequestError>() {
                         @Override
-                        public void onResponse(final JSONObject object) {
-                            BaseResponse cardinfo = new BaseResponse();
-                            Type t = new TypeToken<BaseResponse>() {
-                            }.getType();
-                            BaseResponse response1 = GsonUtils.getObject(object.toString(), t, cardinfo);
-                            if (response1 != null) {
-                                switch (response1.code) {
+                        public void onResponse(final BaseResponse response) {
+                            LogUtils.i("uploadVideoOrPicture  response1=" + response);
+                            if (response != null) {
+                                switch (response.code) {
                                     case RegisterResponse.RESPONSE_SUCCESS://返回成功
                                         mRequestState = true;
+                                        break;
                                     case RegisterResponse.NO_REGISTER://20011	设备未注册
-                                        if (mInstructionListener != null) {
-                                            mHandler.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    mInstructionListener.noRegister();//设备未绑定，需要重新注册
-                                                }
-                                            });
-
-                                        }
+                                        noRegister();//设备未绑定，需要重新注册
                                         mRequestState = false;
                                         break;
                                     case RegisterResponse.NO_BOUND://20012设备w未绑定
-                                        if (mInstructionListener != null) {
-                                            mHandler.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    mInstructionListener.noBinding();//设备未绑定，需要重新绑定
-                                                }
-                                            });
-                                        }
+                                        noBinding();//设备未绑定，需要重新绑定
                                         mRequestState = false;
                                         break;
                                     case RegisterResponse.TOKEN_EXPIRED://token过期
                                         AccessToken accessToken = accessToken();
                                         mRequestState = false;
+                                        uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
+                                                content, room_id, reason, open_time);
                                         break;
                                 }
-
                             }
-
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (mInstructionListener != null) {
-                                        mInstructionListener.postDeviceConfigResponse(object);
-                                    }
-                                }
-                            });
+                            onResponse(response);
                         }
 
                         @Override
                         public void onErrorResponse(final RequestError volleyError) {
                             mRequestState = false;
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (mInstructionListener != null) {
-                                        mInstructionListener.postDeviceConfigFail(volleyError);
-                                    }
-                                }
-                            });
+                            onErrorResponse(volleyError);
                         }
                     });
-        } catch (Exception e) {
-            LogUtils.i("putBucketObject e=" + e);
-        }
+
         return mRequestState;
     }
 
@@ -616,6 +493,157 @@ public class DDSDK {
      */
     public ResultBean pWOpenDoor(int password/*, OpenDoorListener listener*/) {
         return new ResultBean();
+    }
+
+
+    /**
+     * 没注册子线程转UI线程
+     */
+    private void noRegister() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.noRegister();
+                }
+            }
+        });
+    }
+
+
+    /**
+     * 没绑定子线程转UI线程
+     */
+    private void noBinding() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.noBinding();
+                }
+            }
+        });
+    }
+
+
+    /**
+     * 获取配置信息子线程转UI线程
+     *
+     * @param doorConfig
+     */
+    private void getconfig(final DoorConfig doorConfig) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.getconfig(doorConfig);
+                }
+            }
+        });
+    }
+
+
+    /**
+     * 重启信息子线程转UI线程
+     */
+    private void reBoot() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.reBoot();
+                }
+            }
+        });
+    }
+
+    /**
+     * 开门子线程转UI线程
+     */
+    private void openDoor(final RequestOpenDoor openDoor) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.openDoor(openDoor);
+                }
+            }
+        });
+    }
+
+
+    /**
+     * 拉取黑白名单指令子线程转UI线程
+     */
+    private void getBlackAndWhiteList(final List<CardInfo<Floor>> cardInfos) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.getBlackAndWhiteList(cardInfos);
+                }
+            }
+        });
+    }
+
+    /**
+     * 网络密码指令子线程转UI线程
+     */
+    private void getNetworkCipher(final OpenDoorPwd pwd) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.getNetworkCipher(pwd);
+                }
+            }
+        });
+    }
+
+    /**
+     * token失败重新初始化子线程转UI线程
+     */
+    private void tokenFile() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.tokenFile();
+                }
+            }
+        });
+    }
+
+    /**
+     * 请求成功子线程转UI线程
+     */
+    private void onResponse(final BaseResponse response) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.onResponse(response);
+                }
+            }
+        });
+
+    }
+
+    /**
+     * 请求失败响应子线程转UI线程
+     *
+     * @param volleyError
+     */
+    private void onErrorResponse(final RequestError volleyError) {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (mInstructionListener != null) {
+                    mInstructionListener.onErrorResponse(volleyError);
+                }
+            }
+        });
+
     }
 
     /**

@@ -3,8 +3,8 @@ package com.dd.sdk.common;
 import android.content.Context;
 import android.content.Intent;
 
-import com.android.volley.VolleyError;
 import com.dd.sdk.listener.DDListener;
+import com.dd.sdk.net.RequestError;
 import com.dd.sdk.net.volley.DDVolley;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.netbean.BaseResponse;
@@ -12,8 +12,6 @@ import com.dd.sdk.service.MainService;
 import com.dd.sdk.tools.GsonUtils;
 import com.dd.sdk.tools.LogUtils;
 import com.google.mgson.reflect.TypeToken;
-
-import org.json.JSONObject;
 
 import java.lang.reflect.Type;
 import java.util.Timer;
@@ -60,9 +58,9 @@ public class NetworkState implements Runnable {
             @Override
             public void run() {
                 LogUtils.i(TAG, "init onResponse  mSdkAccessKey==" + mSdkAccessKey+"  mSdkSecretKey="+mSdkSecretKey);
-                DDVolley.accessToken(mSdkAccessKey, mSdkSecretKey, new DDListener<JSONObject, VolleyError>() {
+                DDVolley.accessToken(mSdkAccessKey, mSdkSecretKey, new DDListener<BaseResponse<AccessToken>, RequestError>() {
                     @Override
-                    public void onResponse(JSONObject object) {
+                    public void onResponse(BaseResponse<AccessToken> object) {
                         LogUtils.i(TAG, "init onResponse  response==" + object);
                         BaseResponse<AccessToken> response = new BaseResponse<AccessToken>();
                         try {
@@ -82,7 +80,7 @@ public class NetworkState implements Runnable {
                     }
 
                     @Override
-                    public void onErrorResponse(VolleyError error) {
+                    public void onErrorResponse(RequestError error) {
                         LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
 
                     }

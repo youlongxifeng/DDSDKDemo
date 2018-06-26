@@ -17,7 +17,6 @@ import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
-import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.GsonUtils;
@@ -101,14 +100,14 @@ public class DDVolley {
      * @param context
      * @param mobile
      */
-    public static void RegisterDevice(final Context context,final String gruid, final String mobile, final DDListener<RegisterResponse, RequestError> ddListener) {
+    public static void RegisterDevice(final Context context,final String gruid, final String mobile, final DDListener<BaseResponse, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getRegisterDevice(context,gruid, mobile, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
+                        BaseResponse baseResponse = GsonUtils.getObject(response.toString(), BaseResponse.class);
                         ddListener.onResponse(baseResponse);
 
                     }
@@ -171,13 +170,17 @@ public class DDVolley {
      * @param config
      * @param ddListener
      */
-    public static void postConfig(final Context context, final String guid, final UpdoorconfigBean config, final DDListener<JSONObject, RequestError> ddListener) {
+    public static void postConfig(final Context context, final String guid, final UpdoorconfigBean config, final DDListener<BaseResponse, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.postConfig(context, guid, config, new Response.Listener<JSONObject>() {
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(JSONObject object) {
+                        BaseResponse cardinfo = new BaseResponse();
+                        Type t = new TypeToken<BaseResponse>() {
+                        }.getType();
+                        BaseResponse response = GsonUtils.getObject(object.toString(), t, cardinfo);
                         ddListener.onResponse(response);
                     }
                 }, new Response.ErrorListener() {
@@ -242,14 +245,18 @@ public class DDVolley {
      * @return 上传成功返回true，失败返回false 请重传一次
      */
     public static void uploadVideoOrPicture(final Context context, final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey,
-                                            final long time, final String content, final String room_id, final String reason, final String open_time, final DDListener<JSONObject, RequestError> ddListener) {
+                                            final long time, final String content, final String room_id, final String reason, final String open_time, final DDListener<BaseResponse, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.uploadVideoOrPicture(context, fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
                         content, room_id, reason, open_time, new Response.Listener<JSONObject>() {
                             @Override
-                            public void onResponse(JSONObject response) {
+                            public void onResponse(JSONObject object) {
+                                BaseResponse cardinfo = new BaseResponse();
+                                Type t = new TypeToken<BaseResponse>() {
+                                }.getType();
+                                BaseResponse response = GsonUtils.getObject(object.toString(), t, cardinfo);
                                 ddListener.onResponse(response);
                             }
                         }, new Response.ErrorListener() {
