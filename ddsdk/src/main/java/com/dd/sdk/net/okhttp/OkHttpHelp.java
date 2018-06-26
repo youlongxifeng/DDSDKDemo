@@ -1,14 +1,17 @@
 package com.dd.sdk.net.okhttp;
 
 import com.dd.sdk.DDSDK;
+import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.LogUtils;
+import com.dd.sdk.tools.SPUtils;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -29,47 +32,51 @@ public class OkHttpHelp {
 
     /**
      * 上传视频图片文件到亚马逊云
-     * @param bucketName
+     *
      * @param objectName
      * @param filePath
      * @return
      */
-    public static Response putBucketObject(String bucketName, String objectName, String filePath) {
-        Map<String, String> parameters=new HashMap<>();
-        parameters.put("x-amz-acl", "public-read-write");
-        Response response = null;
-        OkHttpClient clientAmazon = ApiEngine.getInstance().clientAmazon();
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(DDSDK.endpoint).newBuilder().addPathSegment(bucketName)
-                                            .addPathSegment(objectName);
-        for (Map.Entry<String, String> entity : parameters.entrySet()) {
-            urlBuilder.addQueryParameter(entity.getKey(), entity.getValue());
-        }
-        FileReader fr;
-        char[] buf = new char[1024 * 8];
-        StringBuilder result = new StringBuilder();
-        LogUtils.i("response====start==result=" + result.length());
-        try {
-            fr = new FileReader(filePath);
-            int num = 0;
-            while ((num = fr.read(buf)) != -1) {
-                result = result.append(new String(buf, 0, num));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        LogUtils.i("response====end==result=" + result.length());
-        File file = new File(filePath);
-        RequestBody fileBody = RequestBody.create(null, file);
-        Request request = new Request.Builder().put(fileBody).url(urlBuilder.build()).build();
-        try {
-            response = clientAmazon.newCall(request).execute();
-            LogUtils.i("response=======" + response);
-        } catch (IOException e) {
-            e.printStackTrace();
-            LogUtils.i("response======e=" + e);
-        }
+    public static Response putBucketObject(final String objectName, final String filePath, final OkHttpCallback callback) {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                String bucket_name = SPUtils.get("bucket_name", "bucket_name");
+                Map<String, String> parameters = new HashMap<>();
+                parameters.put("x-amz-acl", "public-read-write");
+                OkHttpClient clientAmazon = ApiEngine.getInstance().clientAmazon();//new OkHttpClient().newBuilder().addInterceptor(new S3Auth(DDSDK.accessKey, DDSDK.secretKey)).build();//
+                HttpUrl.Builder urlBuilder = HttpUrl.parse(DDSDK.endpoint).newBuilder().addPathSegment(DDSDK.bucket_name)
+                                                    .addPathSegment(objectName);
+                LogUtils.i("response======endpoint=" + DDSDK.endpoint + "  accessKey=" + DDSDK.accessKey + "  secretKey=" + DDSDK.secretKey + " \n bucket_name=" + DDSDK.bucket_name);
+                for (Map.Entry<String, String> entity : parameters.entrySet()) {
+                    urlBuilder.addQueryParameter(entity.getKey(), entity.getValue());
+                }
+                File file = new File(filePath);
+                LogUtils.i("response=======" + file.exists() + "  FILE=" + file.getAbsolutePath());
+                RequestBody fileBody = RequestBody.create(null, file);
+                Request request = new Request.Builder().put(fileBody).url(urlBuilder.build())
+                                                       .build();
+                clientAmazon.newCall(request).enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        LogUtils.i("response=======e=" + e);
+                        callback.onOkFailure(e);
+                    }
 
-        return response;
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if (response != null) {
+                            LogUtils.i("response=======" + response.toString());
+                            callback.onOkResponse(response.toString());
+                        }
+
+                    }
+                });
+
+            }
+        };
+        ThreadManager.getThreadPollProxy().execute(runnable);
+        return null;
     }
 
 }

@@ -16,7 +16,6 @@ import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.manage.ServerCMD;
 import com.dd.sdk.net.RequestError;
-import com.dd.sdk.net.okhttp.OkHttpHelp;
 import com.dd.sdk.net.volley.DDVolley;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.netbean.BaseResponse;
@@ -154,8 +153,6 @@ public class DDSDK {
         this.mNetworkState.tokenCheck();
         this.mMobile = mobile;
         accessToken();
-        this.mBindServiceOperation = new BindServiceOperation(context, netConfig, guid, mIOnCommandListener);
-        this.mBindServiceOperation.bindService();
         this.bucket_name = "bucket_name";
         LogUtils.i("=======init=====");
     }
@@ -169,8 +166,8 @@ public class DDSDK {
      */
     public void amazonCloudinit(@NonNull String mendpoint, @NonNull String maccessKey, @NonNull String msecretKey) {
         this.endpoint = mendpoint;
-        this.secretKey = maccessKey;
-        this.accessKey = msecretKey;
+        this.secretKey = msecretKey;
+        this.accessKey = maccessKey ;
     }
 
 
@@ -184,6 +181,8 @@ public class DDSDK {
                 try {
                     LogUtils.i(TAG, "init onResponse  response==" + response);
                     if (response.isSuccess()) {
+                        mBindServiceOperation = new BindServiceOperation(mContext, netConfig, mGuid, mIOnCommandListener);
+                        mBindServiceOperation.bindService();
                         accessToken = response.data;
                         TokenPrefer.saveConfig(mContext, accessToken);
                         RegisterDevice(mContext, TextUtils.isEmpty(mMobile) ? "13787138669" : mMobile);
@@ -213,17 +212,16 @@ public class DDSDK {
      * @param mobile  电话号码
      */
     private void RegisterDevice(final Context context, final String mobile) {
-        LogUtils.i("RegisterDevice=============");
         DDVolley.RegisterDevice(context, mGuid, mobile, new DDListener<BaseResponse, RequestError>() {
             @Override
             public void onResponse(final BaseResponse baseResponse) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
                 switch (baseResponse.code) {
                     case RegisterResponse.RESPONSE_SUCCESS:
-                         getConfig(context, mGuid, "5000");
+                        getConfig(context, mGuid, "5000");
                         break;
                     case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
-                         getConfig(context, mGuid, "5000");
+                        getConfig(context, mGuid, "5000");
                         break;
                     case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
                         RegisterDevice(context, mobile);//注册失败重新注册
@@ -240,13 +238,13 @@ public class DDSDK {
                     default:
                         break;
                 }
-                onResponse(baseResponse);
+                onResponseListener(baseResponse);
             }
 
             @Override
             public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + volleyError);
-                onErrorResponse(volleyError);
+                onErrorResponseListener(volleyError);
             }
         });
 
@@ -260,11 +258,10 @@ public class DDSDK {
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
     public void getConfig(final Context context, final String guid, final String door_ver) {
-        LogUtils.i("getConfig   response=");
         DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, RequestError>() {
             @Override
             public void onResponse(final BaseResponse<DoorConfig> response) {
-                LogUtils.i("getConfig   response="+response);
+                LogUtils.i("getConfig   response=" + response + "  =" + (response != null));
                 if (response != null) {
                     switch (response.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
@@ -282,20 +279,20 @@ public class DDSDK {
                         case RegisterResponse.TOKEN_EXPIRED://token过期
                             AccessToken accessToken = accessToken();
                             if (accessToken != null) {
-                               getConfig(context, guid, door_ver);
+                                getConfig(context, guid, door_ver);
                             }
                             break;
                         default:
                             return;
                     }
                 }
-                onResponse(response);//设备未绑定，需要重新绑定
+                onResponseListener(response);//设备未绑定，需要重新绑定
             }
 
             @Override
             public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i("EEE", "getConfig error==" + volleyError);
-                onErrorResponse(volleyError);//设备未绑定，需要重新绑定
+                onErrorResponseListener(volleyError);//设备未绑定，需要重新绑定
             }
         });
 
@@ -316,7 +313,7 @@ public class DDSDK {
                 LogUtils.i("postDeviceConfig   response=" + response);
                 resultBean.setErrCode(200);
                 resultBean.setErrMsg("信息上报成功");
-                onResponse(response);
+                onResponseListener(response);
 
             }
 
@@ -324,31 +321,12 @@ public class DDSDK {
             public void onErrorResponse(final RequestError volleyError) {
                 resultBean.setErrCode(-1);
                 resultBean.setErrMsg("信息上报失败");
-                onErrorResponse(volleyError);
+                onErrorResponseListener(volleyError);
             }
         });
         return resultBean;
     }
 
-
-    /**
-     * 释放相关资源
-     */
-    public void release(Context context) {
-        if (null != mNetworkState) {
-            mNetworkState.release();
-            mNetworkState = null;
-        }
-        if (mBindServiceOperation != null) {
-            mBindServiceOperation.unbindService();
-        }
-        DDVolley.stop();
-        if (mHandler != null) {
-
-            mHandler.removeCallbacksAndMessages(null);
-        }
-        // compositeDisposable.clear();
-    }
 
     /**
      * 拉取黑白名单,数据会分页拉取，约定每次最大返回500条，如果每次返回值是500则再拉取一次
@@ -379,12 +357,12 @@ public class DDSDK {
                         }
                         break;
                 }
-                onResponse(response);
+                onResponseListener(response);
             }
 
             @Override
             public void onErrorResponse(RequestError volleyError) {
-                onErrorResponse(volleyError);
+                onErrorResponseListener(volleyError);
             }
         });
         return null;
@@ -442,44 +420,43 @@ public class DDSDK {
     public boolean uploadVideoOrPicture(final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey, final long time,
                                         final String content, final String room_id, final String reason, final String open_time) {
         mRequestState = false;
-
-            bucket_name = SPUtils.get("bucket_name", bucket_name);
-            OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
-            DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
-                    content, room_id, reason, open_time, new DDListener<BaseResponse, RequestError>() {
-                        @Override
-                        public void onResponse(final BaseResponse response) {
-                            LogUtils.i("uploadVideoOrPicture  response1=" + response);
-                            if (response != null) {
-                                switch (response.code) {
-                                    case RegisterResponse.RESPONSE_SUCCESS://返回成功
-                                        mRequestState = true;
-                                        break;
-                                    case RegisterResponse.NO_REGISTER://20011	设备未注册
-                                        noRegister();//设备未绑定，需要重新注册
-                                        mRequestState = false;
-                                        break;
-                                    case RegisterResponse.NO_BOUND://20012设备w未绑定
-                                        noBinding();//设备未绑定，需要重新绑定
-                                        mRequestState = false;
-                                        break;
-                                    case RegisterResponse.TOKEN_EXPIRED://token过期
-                                        AccessToken accessToken = accessToken();
-                                        mRequestState = false;
-                                        uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
-                                                content, room_id, reason, open_time);
-                                        break;
-                                }
+       /* bucket_name ="bucket_name";// SPUtils.get("bucket_name", bucket_name);
+        OkHttpHelp.putBucketObject(accessKey, secretKey,bucket_name, fileName, fileAddress);//提交文件到亚马逊云*/
+        DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
+                content, room_id, reason, open_time, new DDListener<BaseResponse, RequestError>() {
+                    @Override
+                    public void onResponse(final BaseResponse response) {
+                        LogUtils.i("uploadVideoOrPicture  response=" + response);
+                        if (response != null) {
+                            switch (response.code) {
+                                case RegisterResponse.RESPONSE_SUCCESS://返回成功
+                                    mRequestState = true;
+                                    break;
+                                case RegisterResponse.NO_REGISTER://20011	设备未注册
+                                    noRegister();//设备未绑定，需要重新注册
+                                    mRequestState = false;
+                                    break;
+                                case RegisterResponse.NO_BOUND://20012设备w未绑定
+                                    noBinding();//设备未绑定，需要重新绑定
+                                    mRequestState = false;
+                                    break;
+                                case RegisterResponse.TOKEN_EXPIRED://token过期
+                                    AccessToken accessToken = accessToken();
+                                    mRequestState = false;
+                                    uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
+                                            content, room_id, reason, open_time);
+                                    break;
                             }
-                            onResponse(response);
                         }
+                        onResponseListener(response);
+                    }
 
-                        @Override
-                        public void onErrorResponse(final RequestError volleyError) {
-                            mRequestState = false;
-                            onErrorResponse(volleyError);
-                        }
-                    });
+                    @Override
+                    public void onErrorResponse(final RequestError volleyError) {
+                        mRequestState = false;
+                        onErrorResponseListener(volleyError);
+                    }
+                });
 
         return mRequestState;
     }
@@ -617,12 +594,12 @@ public class DDSDK {
     /**
      * 请求成功子线程转UI线程
      */
-    private void onResponse(final BaseResponse response) {
+    private void onResponseListener(final BaseResponse response) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (mInstructionListener != null) {
-                    mInstructionListener.onResponse(response);
+                    mInstructionListener.onResponseListener(response);
                 }
             }
         });
@@ -634,12 +611,12 @@ public class DDSDK {
      *
      * @param volleyError
      */
-    private void onErrorResponse(final RequestError volleyError) {
+    private void onErrorResponseListener(final RequestError volleyError) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (mInstructionListener != null) {
-                    mInstructionListener.onErrorResponse(volleyError);
+                    mInstructionListener.onErrorResponseListener(volleyError);
                 }
             }
         });
@@ -690,5 +667,24 @@ public class DDSDK {
             return 0;
         }
     };
+
+    /**
+     * 释放相关资源
+     */
+    public void release(Context context) {
+        if (null != mNetworkState) {
+            mNetworkState.release();
+            mNetworkState = null;
+        }
+        if (mBindServiceOperation != null) {
+            mBindServiceOperation.unbindService();
+        }
+        DDVolley.stop();
+        if (mHandler != null) {
+
+            mHandler.removeCallbacksAndMessages(null);
+        }
+        // compositeDisposable.clear();
+    }
 
 }

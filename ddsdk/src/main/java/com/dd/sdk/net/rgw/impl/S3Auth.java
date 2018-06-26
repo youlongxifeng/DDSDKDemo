@@ -18,7 +18,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 import okhttp3.Interceptor;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -67,12 +66,45 @@ public class S3Auth implements Interceptor {
             "versions",
             "website"};
     private final Set<String> subResources = new HashSet<>();
+         /*   ImmutableSet.of(
+                    "acl",
+                    "lifecycle",
+                    "location",
+                    "logging",
+                    "notification",
+                    "partNumber",
+                    "policy",
+                    "requestPayment",
+                    "torrent",
+                    "uploadId",
+                    "uploads",
+                    "versionId",
+                    "versioning",
+                    "versions",
+                    "website");*/
 
     {
         for (String str : strResources) {
             subResources.add(str);
         }
     }
+
+    /*
+    If the request specifies query string parameters overriding the response header values (see Get Object), append the
+    query string parameters and their values. When signing, you do not encode these values; however, when making the
+    request, you must encode these parameter values. The query string parameters in a GET request include
+    response-content-type, response-content-language, response-expires, response-cache-control,
+    response-content-disposition, and response-content-encoding.
+    */
+    // TODO: implement this
+ /*   Set<String> queryStrings =
+            ImmutableSet.of(
+                    "response-content-type",
+                    "response-content-language",
+                    "response-expires",
+                    "response-cache-control",
+                    "response-content-disposition",
+                    "response-content-encoding");*/
 
     public S3Auth() {
         this.accessKey = DDSDK.accessKey;
@@ -85,7 +117,7 @@ public class S3Auth implements Interceptor {
     }
 
     private static String encodeBase64(byte[] data) {
-        String base64 = Base64.getEncoder().encodeToString(data);
+        String base64 =Base64.getEncoder().encodeToString(data);
         if (base64.endsWith("\r\n")) {
             base64 = base64.substring(0, base64.length() - 2);
         }
@@ -97,11 +129,12 @@ public class S3Auth implements Interceptor {
     }
 
 
+
+
     @Override
     public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
         String httpVerb = request.method();
-        RequestBody fileBody = request.body();
         String date = "";
         Calendar cd = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss 'GMT'", Locale.UK);
@@ -118,9 +151,8 @@ public class S3Auth implements Interceptor {
         }
         LogUtils.i(TAG, "createBucket  =====  \n  date=" + date + "  \n resource=" + resource);
         String sign = sign(httpVerb, date, resource);
-        LogUtils.i(TAG, "createBucket  sign=" + sign.trim() + "\n  date=" + date.trim() + "  \n resource=" + resource.trim() + " fileBody=" + fileBody.contentLength());
+        LogUtils.i(TAG, "createBucket  sign=" + sign.trim() + "\n  date=" + date.trim() + "  \n resource=" + resource.trim()+" fileBody=");
         request = request.newBuilder().header("Authorization", sign).header("Date", date).build();
-
         return chain.proceed(request);
     }
 
@@ -165,6 +197,5 @@ public class S3Auth implements Interceptor {
             throw new RuntimeException("MAC CALC FAILED.");
         }
     }
-
 
 }

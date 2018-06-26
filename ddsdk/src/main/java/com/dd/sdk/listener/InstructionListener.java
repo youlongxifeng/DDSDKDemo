@@ -71,11 +71,11 @@ public interface InstructionListener {
      * 请求成功响应
      * @param response
      */
-    void  onResponse(BaseResponse response);
+    void  onResponseListener(BaseResponse response);
 
     /**
      * 请求失败响应
      * @param volleyError
      */
-    void onErrorResponse(RequestError volleyError);
+    void onErrorResponseListener(RequestError volleyError);
 }

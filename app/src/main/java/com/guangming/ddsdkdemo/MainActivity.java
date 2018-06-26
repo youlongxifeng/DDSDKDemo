@@ -14,6 +14,8 @@ import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
 import com.dd.sdk.net.RequestError;
+import com.dd.sdk.net.okhttp.OkHttpCallback;
+import com.dd.sdk.net.okhttp.OkHttpHelp;
 import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DeviceInfo;
@@ -28,6 +30,7 @@ import com.dd.sdk.tools.LogUtils;
 import com.dd.sdk.tools.PermissionUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -51,20 +54,19 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                //DDApplication.unbindService();
-
                 PermissionUtil.requestPerssions(MainActivity.this, REQUEST_CODE_CAMERA, Manifest.permission.CAMERA, Manifest.permission.READ_SMS, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE);
                 PermissionUtil.getCameraPermissions(MainActivity.this, REQUEST_CODE_CAMERA);
             }
         });
-        /*ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
+       /*  ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
         scheduledThreadPool.scheduleAtFixedRate(new Runnable() {
 
             @Override
             public void run() {
                 LogUtils.i("ScheduledExecutorService   delay 1 seconds, and excute every 3 seconds  Name="+Thread.currentThread().getName());
             }
-        }, 1, 3, TimeUnit.SECONDS);*/
+        }, 1, 3, TimeUnit.SECONDS);
+        scheduledThreadPool.shutdown();*/
 
 
     }
@@ -129,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
             @Override
             public void run() {
                 FileType fileType = FileType.PICTURE_TYPE;//文件类型 FileType.VIDEO_TYPE FileType.PICTURE_TYPE，
-                String fileName = "picture";//文件名称
+                String fileName = "IMG.jpg";//文件名称
                 String fileAddress = Environment.getExternalStorageDirectory() + File.separator + "IMG.jpg";//文件地址
                 String guid = "test20160822001";//设备唯一标识符;
                 String device_type = "2";//设备类型 设备类型 1:门口机 2:Android 3:IOS设备 4:室内机
@@ -146,6 +148,18 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
                 try {
                     DDSDK.getInstance().uploadVideoOrPicture(fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time, content, room_id, reason, open_time);
+
+                    OkHttpHelp.putBucketObject(fileName, fileAddress, new OkHttpCallback() {
+                        @Override
+                        public void onOkFailure(IOException e) {
+
+                        }
+
+                        @Override
+                        public void onOkResponse(String s) {
+
+                        }
+                    });//提交文件到亚马逊云
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -169,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
      */
     public void report_video(View view) {
         FileType fileType = FileType.VIDEO_TYPE;//文件类型 FileType.VIDEO_TYPE FileType.PICTURE_TYPE，
-        String fileName = "picture";//文件名称
+        String fileName = "IMG.jpg";//文件名称
         String fileAddress = Environment.getExternalStorageDirectory() + File.separator + "IMG.jpg";//文件地址
         String guid = "test20160822001";//设备唯一标识符;
         String device_type = "2";//设备类型 设备类型 1:门口机 2:Android 3:IOS设备 4:室内机
@@ -198,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
     protected void onDestroy() {
         super.onDestroy();
         LogUtils.i("unbindService==Destroy=");
-        DDSDK.getInstance().release(this.getApplication());
+        DDSDK.getInstance().release(this);
     }
 
 
@@ -307,9 +321,15 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         return resultBean;
     }
 
-
+    /**
+     * 当前位置存储开门密码
+     *
+     * @param pwd
+     * @return
+     */
     @Override
     public ResultBean getNetworkCipher(OpenDoorPwd pwd) {
+
         return new ResultBean();
     }
 
@@ -331,12 +351,12 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
     }
 
     @Override
-    public void onResponse(BaseResponse response) {
+    public void onResponseListener(BaseResponse response) {
         LogUtils.i("response=" + response);
     }
 
     @Override
-    public void onErrorResponse(RequestError volleyError) {
+    public void onErrorResponseListener(RequestError volleyError) {
         LogUtils.i("volleyError=" + volleyError);
     }
 }

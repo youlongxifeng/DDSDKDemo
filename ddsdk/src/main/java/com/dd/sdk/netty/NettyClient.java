@@ -154,6 +154,12 @@ public class NettyClient {
         return flag;
     }
 
+    /**
+     * 发送数据到服务端
+     * @param data
+     * @param listener
+     * @return
+     */
     public boolean sendMsgToServer(byte[] data, ChannelFutureListener listener) {
         boolean flag = socketChannel != null && isConnect;
         if (flag) {
@@ -165,16 +171,24 @@ public class NettyClient {
         return flag;
     }
 
-    protected void sendReponse(String cmd, String content, boolean success) {
-
+    protected void sendReponse(String cmd, String content,String sn, boolean success) {
+        builder(cmd,content,sn,success);
     }
 
-    public static String builder(String cmd, String content, String sn, String guid, boolean success) {
+    /**
+     * 向服务器发送指令模板
+     * @param cmd
+     * @param content
+     * @param sn
+     * @param success
+     * @return
+     */
+    public   String builder(String cmd, String content, String sn, boolean success) {
         JSONObject o = new JSONObject();
         try {
             o.put("cmd", cmd);
             o.put("success", success);
-            o.put("guid", guid);
+            o.put("guid", mGuid);
             if (!TextUtils.isEmpty(content)) {
                 o.put("message", content);
             }

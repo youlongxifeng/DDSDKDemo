@@ -111,7 +111,7 @@ public class ApiEngine {
                     .writeTimeout(12, TimeUnit.SECONDS)
                     .writeTimeout(12, TimeUnit.SECONDS)
                     //.cookieJar(new CookiesManager())//在OkHttpClient创建时，传入这个CookieJar的实现，就能完成对Cookie的自动管理了
-                    .addNetworkInterceptor(new S3Auth())// 将有网络拦截器当做网络拦截器添加
+                    .addNetworkInterceptor(new S3Auth(DDSDK.accessKey, DDSDK.secretKey))// 将有网络拦截器当做网络拦截器添加
                     .retryOnConnectionFailure(true)
                     .build();
         }
