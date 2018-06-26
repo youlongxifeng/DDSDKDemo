@@ -2,12 +2,10 @@ package com.dd.sdk;
 
 import android.content.Context;
 
-import com.dd.sdk.common.NetworkState;
 import com.dd.sdk.config.NetConfig;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.service.ICommandManager;
-import com.dd.sdk.tools.LogUtils;
 
 /**
  * @author Administrator
@@ -20,11 +18,10 @@ import com.dd.sdk.tools.LogUtils;
  */
 
 public class DDSDKBuilder {
-    private final static String TAG = DDSDK.class.getSimpleName();
+    private final static String TAG = DDSDKBuilder.class.getSimpleName();
     private final static int TOKEN_REGISTER = 1;
     private final static int TOKEN_GET_CONFIG = 2;
     private final static String CURID_VALUE = "curid";//设置默认的保存黑白名单的下发值
-    private static NetworkState mNetworkState;
     private static InstructionListener mInstructionListener;
     private static Context mContext;
     private static AccessToken accessToken;
@@ -42,15 +39,11 @@ public class DDSDKBuilder {
     private static String mGuid;
 
 
-
     /**
      * 传递上下文
      */
     public DDSDKBuilder initContext(Context context) {
         mContext = context;
-        LogUtils.init(null, true, true);
-        mNetworkState = new NetworkState(context);
-        bucket_name = "bucket_name";
         return this;
     }
 
@@ -83,9 +76,7 @@ public class DDSDKBuilder {
      * @return
      */
     public DDSDKBuilder setdeviceID(String deviceID) {
-       /* DeviceInformation.getInstance().setGuid(deviceID);
-        DeviceInformation.getInstance().getGuid();*/
-        mGuid =deviceID;
+        mGuid = deviceID;
         return this;
     }
 
@@ -97,8 +88,6 @@ public class DDSDKBuilder {
      */
     public DDSDKBuilder setNetConfig(NetConfig config) {
         netConfig = config;
-     /*   netConfig.setdPort(port);
-        netConfig.setDomain(domainName);*/
         return this;
     }
 
@@ -120,11 +109,7 @@ public class DDSDKBuilder {
      */
     public DDSDK build() {
         DDSDK ddsdk = new DDSDK();
-        /*if (sdkaccessKey != null && sdksecretKey != null) {
-            ddsdk.accessToken();
-        }*/
-      //  ddsdk.init(mContext, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "10.0.2.152", 8888, this);
-
+        ddsdk.init(mContext, sdkaccessKey, sdksecretKey, mGuid, netConfig.getDomain(), netConfig.getdPort(),"13787138669", mInstructionListener);
         return ddsdk;
     }
 }

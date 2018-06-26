@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Handler;
 
 import com.dd.sdk.listener.ConfigurationListener;
-import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
 import com.dd.sdk.netbean.OpenDoorPwd;
 import com.dd.sdk.netbean.RequestOpenDoor;
@@ -34,13 +33,13 @@ public class ServerCMD {
     private final static String TAG = ServerCMD.class.getSimpleName();
     private static Context mContext;
     private static String mGuid;
-    private static InstructionListener mInstructionListener;
+    //private static InstructionListener mInstructionListener;
     private static ConfigurationListener sConfigurationListener;
     private static Handler mHandler = null;
 
 
-    public static void setStringConect(String msg, Context context, String guid, Handler handler, InstructionListener listener, ConfigurationListener configurationListener) {
-        mInstructionListener = listener;
+    public static void setStringConect(String msg, Context context, String guid, Handler handler,  ConfigurationListener configurationListener) {
+       // mInstructionListener = listener;
         mContext = context;
         mGuid = guid;
         mHandler = handler;
@@ -62,8 +61,8 @@ public class ServerCMD {
                             sConfigurationListener.getConfigCmd(mContext, mGuid, "5000");
                         }
                     } else if ("reboot".equalsIgnoreCase(methodName)) {// 重启指令
-                        if (mInstructionListener != null) {
-                            mInstructionListener.reBoot();
+                        if (sConfigurationListener != null) {
+                            sConfigurationListener.reBoot();
                         }
                     } else if ("cardNew".equalsIgnoreCase(methodName)) {//拉取黑白名单指令
                         LogUtils.i(TAG, "onMessageResponse MSG=" + msg);
@@ -97,7 +96,7 @@ public class ServerCMD {
                     JSONArray a = o.getJSONArray("data");
                     int type = OpenDoorListener.TYPE_PHONE_OPEN_DOOR, floor = 0;
 
-                    String roomId = "", attach = "", sn = "";
+                    String roomId = "", attach = "", sn = "",reason="";
                     if (a.length() > 0) {
                         JSONObject tmp = a.getJSONObject(0);
                         roomId = tmp.getString("room_id");
@@ -115,18 +114,22 @@ public class ServerCMD {
                         if (tmp.has("sn")) {
                             sn = tmp.getString("sn");
                         }
+                        if(tmp.has("reason")){
+                            reason=tmp.getString("reason");
+                        }
                         openDoor = new RequestOpenDoor();
                         openDoor.setOperateType(type);
                         openDoor.setAttach(attach);
                         openDoor.setRoomId(roomId);
                         openDoor.setSn(sn);
                         openDoor.setFloor(floor);
-                        if (mInstructionListener != null) {
+                        openDoor.setReason(reason);
+                        if (sConfigurationListener != null) {
                             final RequestOpenDoor finalOpenDoor = openDoor;
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    mInstructionListener.openDoor(finalOpenDoor);
+                                    sConfigurationListener.openDoor(finalOpenDoor);
                                 }
                             });
 
@@ -150,10 +153,11 @@ public class ServerCMD {
 
                 if (mContext != null) {
                     int curid = 0;
-                    if (mInstructionListener != null) {
-                        curid = mInstructionListener.nameListCurid();
+                    if (sConfigurationListener != null) {
+                        curid = sConfigurationListener.nameListCurid();
+                        sConfigurationListener.getCardInfoCmd(mContext, mGuid, curid);
                     }
-                    sConfigurationListener.getCardInfoCmd(mContext, mGuid, curid);
+
                 }
             }
         };
@@ -177,11 +181,11 @@ public class ServerCMD {
                         SubGsonClass<OpenDoorPwd> d = mGson.fromJson(content, t);
                         if (d.isSuccess() && d.hasData()) {
                             final OpenDoorPwd pwd = d.getData().get(0);
-                            if (mInstructionListener != null) {
+                            if (sConfigurationListener != null) {
                                 mHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        mInstructionListener.getNetworkCipher(pwd);
+                                        sConfigurationListener.getNetworkCipher(pwd);
                                     }
                                 });
 

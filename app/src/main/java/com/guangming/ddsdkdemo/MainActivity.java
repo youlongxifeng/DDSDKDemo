@@ -13,11 +13,14 @@ import com.dd.sdk.DDSDK;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.listener.OpenDoorListener;
+import com.dd.sdk.net.RequestError;
+import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DeviceInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
 import com.dd.sdk.netbean.OpenDoorPwd;
+import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
@@ -25,38 +28,29 @@ import com.dd.sdk.thread.ThreadManager;
 import com.dd.sdk.tools.LogUtils;
 import com.dd.sdk.tools.PermissionUtil;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity implements InstructionListener {
     public static String accessKey, secretKey, endpoint, bucket_name;
-  private static   Context mContext;
+    private static Context mContext;
     private final int REQUEST_CODE_CAMERA = 101;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-         mContext = this;
+        mContext = this;
         LogUtils.init(null, true, true);
-
-       /* NetConfig config=new NetConfig();
-        config.setdPort(8888);
-        config.setDomain("10.0.2.152");*/
-        /*DDSDK ddsdk=new DDSDKBuilder().initContext(this).sdkAccessKey("f2a9d153188d87e18adc233ca8ee30da").sdkSecretKey("564f939a8f8a5befa67d62bdf79e6fa5")
-                                      .setdeviceID("test20160822001").setNetConfig(config).setInstructionListener(this).build();*/
-
-
-        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619, this);
+        DDSDK.getInstance().init(this, "f2a9d153188d87e18adc233ca8ee30da", "564f939a8f8a5befa67d62bdf79e6fa5", "test20160822001", "172.21.21.25", 5619,"13787138669", this);
         accessKey = "GXDYC1SINE72M7IMOEG3";
         secretKey = "z2w2T9wLNpdwaUNLJgG8vGRWO1i9stkxH5bMMLRA";
         endpoint = "http://172.21.20.102:7480";
-        DDSDK.getInstance().amazonCloudinit(endpoint,  accessKey,secretKey);
+        DDSDK.getInstance().amazonCloudinit(endpoint, accessKey, secretKey);
         findViewById(R.id.unbindserver).setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,14 +60,22 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
                 PermissionUtil.getCameraPermissions(MainActivity.this, REQUEST_CODE_CAMERA);
             }
         });
-        ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
+        /*ScheduledExecutorService scheduledThreadPool = Executors.newScheduledThreadPool(5);
         scheduledThreadPool.scheduleAtFixedRate(new Runnable() {
 
             @Override
             public void run() {
                 LogUtils.i("ScheduledExecutorService   delay 1 seconds, and excute every 3 seconds  Name="+Thread.currentThread().getName());
             }
-        }, 1, 3, TimeUnit.SECONDS);
+        }, 1, 3, TimeUnit.SECONDS);*/
+
+
+
+
+
+
+
+
     }
 
     /**
@@ -210,12 +212,32 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
 
 
     @Override
+    public ResultBean successRegister() {
+        return null;
+    }
+
+    @Override
     public ResultBean noRegister() {
+        LogUtils.i("设备未注册===========");
         return new ResultBean();
     }
 
     @Override
+    public ResultBean responseRegister(RegisterResponse response) {
+        return null;
+    }
+
+    @Override
+    public ResultBean failRegister(RequestError response) {
+        LogUtils.i("设备注册失败===========");
+        return new ResultBean();
+    }
+
+
+
+    @Override
     public ResultBean noBinding() {
+        LogUtils.i("设备未绑定===========");
         return new ResultBean();
     }
 
@@ -248,6 +270,26 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
         //上报配置内容
         DDSDK.getInstance().postDeviceConfig("test20160822001", updoorconfigBean);
         return new ResultBean();
+    }
+
+    @Override
+    public ResultBean getconfigResponse(BaseResponse<DoorConfig> response) {
+        return null;
+    }
+
+    @Override
+    public ResultBean getconfigFail(RequestError doorConfig) {
+        return null;
+    }
+
+    @Override
+    public ResultBean postDeviceConfigResponse(JSONObject response) {
+        return null;
+    }
+
+    @Override
+    public ResultBean postDeviceConfigFail(RequestError volleyError) {
+        return null;
     }
 
     @Override
@@ -309,6 +351,18 @@ public class MainActivity extends AppCompatActivity implements InstructionListen
             LogUtils.i("getBlackAndWhiteList   cardInfos=" + cardInfos.size());
         }
         return resultBean;
+    }
+
+    @Override
+    public ResultBean getBlackAndWhiteSuccess(BaseResponse<CardInfo<Floor>> response) {
+        return null;
+    }
+
+
+
+    @Override
+    public ResultBean getBlackAndWhiteListFail(RequestError requestError) {
+        return null;
     }
 
     @Override

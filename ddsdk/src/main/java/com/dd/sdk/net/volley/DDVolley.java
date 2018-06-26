@@ -11,8 +11,12 @@ import com.dd.sdk.DDSDK;
 import com.dd.sdk.listener.DDListener;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.net.NetworkHelp;
+import com.dd.sdk.net.RequestError;
+import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.netbean.BaseResponse;
+import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DoorConfig;
+import com.dd.sdk.netbean.Floor;
 import com.dd.sdk.netbean.RegisterResponse;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.thread.ThreadManager;
@@ -50,6 +54,7 @@ public class DDVolley {
     public static void stop() {
         if (mNetWorkRequest != null) {
             mNetWorkRequest.stop();
+            mNetWorkRequest=null;
         }
 
     }
@@ -61,21 +66,26 @@ public class DDVolley {
      * @param secret_key
      * @param ddListener
      */
-    public static void accessToken(final String app_id, final String secret_key, final DDListener ddListener) {
+    public static void accessToken(final String app_id, final String secret_key, final DDListener<BaseResponse<AccessToken>, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getInstance().getAccessToken(app_id, secret_key, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject object) {
+                        BaseResponse<AccessToken> response = new BaseResponse<>();
+                        Type t = new TypeToken<BaseResponse<AccessToken>>() {
+                        }.getType();
+                        response = GsonUtils.getObject(object.toString(), t, response);
 
-                        ddListener.onResponse(object);
+                        ddListener.onResponse(response);
 
                     }
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        ddListener.onErrorResponse(error);
+                        RequestError requestError=new RequestError(error.getMessage());
+                        ddListener.onErrorResponse(requestError);
 
                     }
                 });
@@ -89,14 +99,13 @@ public class DDVolley {
      * 设备注册检查,如果没有注册则注册设备
      *
      * @param context
-     * @param macAddress
      * @param mobile
      */
-    public static void RegisterDevice(final Context context,final String gruid,final String macAddress, final String mobile, final DDListener ddListener) {
+    public static void RegisterDevice(final Context context,final String gruid, final String mobile, final DDListener<RegisterResponse, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                NetworkHelp.getRegisterDevice(context,gruid, macAddress, mobile, new Response.Listener<JSONObject>() {
+                NetworkHelp.getRegisterDevice(context,gruid, mobile, new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
@@ -106,7 +115,8 @@ public class DDVolley {
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        ddListener.onErrorResponse(error);
+                        RequestError requestError=new RequestError(error.getMessage());
+                        ddListener.onErrorResponse(requestError);
                     }
                 });
             }
@@ -122,7 +132,7 @@ public class DDVolley {
      * @param door_ver   5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      * @param ddListener
      */
-    public static void getConfig(final Context context, final String guid, final String door_ver, final DDListener ddListener) {
+    public static void getConfig(final Context context, final String guid, final String door_ver, final DDListener<BaseResponse<DoorConfig>, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -142,7 +152,8 @@ public class DDVolley {
                             @Override
                             public void onErrorResponse(VolleyError error) {
                                 LogUtils.i("getConfig   response=error=" + error);
-                                ddListener.onErrorResponse(error);
+                                RequestError requestError=new RequestError(error.getMessage());
+                                ddListener.onErrorResponse(requestError);
                             }
                         });
             }
@@ -160,7 +171,7 @@ public class DDVolley {
      * @param config
      * @param ddListener
      */
-    public static void postConfig(final Context context, final String guid, final UpdoorconfigBean config, final DDListener ddListener) {
+    public static void postConfig(final Context context, final String guid, final UpdoorconfigBean config, final DDListener<JSONObject, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -172,7 +183,8 @@ public class DDVolley {
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        ddListener.onErrorResponse(error);
+                        RequestError requestError=new RequestError(error.getMessage());
+                        ddListener.onErrorResponse(requestError);
                     }
                 });
             }
@@ -187,19 +199,24 @@ public class DDVolley {
      * @param guid  设备唯一标识符
      * @param curid 当前操作步数
      */
-    public static void getCardInfo(final Context context, final String guid, final int curid, final DDListener ddListener) {
+    public static void getCardInfo(final Context context, final String guid, final int curid, final DDListener<BaseResponse<CardInfo<Floor>> , RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 NetworkHelp.getCardInfo(context, guid, curid, new Response.Listener<JSONObject>() {
                     @Override
-                    public void onResponse(JSONObject response) {
+                    public void onResponse(JSONObject object) {
+                        BaseResponse<CardInfo<Floor>> cardinfo = new BaseResponse<>();
+                        Type t = new TypeToken<BaseResponse<CardInfo<Floor>>>() {
+                        }.getType();
+                        BaseResponse<CardInfo<Floor>> response= GsonUtils.getObject(object.toString(), t, cardinfo);
                         ddListener.onResponse(response);
                     }
                 }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        ddListener.onErrorResponse(error);
+                        RequestError requestError=new RequestError(error.getMessage());
+                        ddListener.onErrorResponse(requestError);
                     }
                 });
             }
@@ -225,7 +242,7 @@ public class DDVolley {
      * @return 上传成功返回true，失败返回false 请重传一次
      */
     public static void uploadVideoOrPicture(final Context context, final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey,
-                                            final long time, final String content, final String room_id, final String reason, final String open_time, final DDListener ddListener) {
+                                            final long time, final String content, final String room_id, final String reason, final String open_time, final DDListener<JSONObject, RequestError> ddListener) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -238,7 +255,8 @@ public class DDVolley {
                         }, new Response.ErrorListener() {
                             @Override
                             public void onErrorResponse(VolleyError error) {
-                                ddListener.onErrorResponse(error);
+                                RequestError requestError=new RequestError(error.getMessage());
+                                ddListener.onErrorResponse(requestError);
                             }
                         });
             }

@@ -15,6 +15,7 @@ import com.dd.sdk.listener.FileType;
 import com.dd.sdk.net.volley.DDVolley;
 import com.dd.sdk.netbean.AccessToken;
 import com.dd.sdk.netbean.UpdoorconfigBean;
+import com.dd.sdk.tools.AppUtils;
 import com.dd.sdk.tools.LogUtils;
 import com.google.mgson.Gson;
 
@@ -64,7 +65,7 @@ public class NetworkHelp {
             JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.TOKEN), new JSONObject(params), listener, errlistener);
             DDVolley.addRequestQueue(request);
         } catch (Exception e) {
-        LogUtils.i("getAccessToken   e===="+e);
+            LogUtils.i("getAccessToken   e====" + e);
         }
 
     }
@@ -78,17 +79,17 @@ public class NetworkHelp {
      * =1866e0df795fb7e&device_type=1&mobile_no=13410309446&v=3.0.6
      */
 
-    public static void getRegisterDevice(Context context,String  mGuid ,String macAddress, String mobile,
+    public static void getRegisterDevice(Context context, String mGuid,  String mobile,
                                          Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
         Map<String, String> params = new HashMap<>();
-        final DisplayMetrics res = context.getResources().getDisplayMetrics();
+        DisplayMetrics res = context.getResources().getDisplayMetrics();
         AccessToken accessToken = TokenPrefer.loadConfig(context);
         params.put("token", accessToken.getToken());
         params.put("guid", mGuid);
         params.put("width", String.valueOf(res.widthPixels));
         params.put("height", String.valueOf(res.heightPixels));
         params.put("cpu", Build.DEVICE);
-        params.put("mac", macAddress);
+        params.put("mac", AppUtils.getIpAddress(context));
         params.put("mobile", mobile);
         LogUtils.i(TAG, "getRegisterDevice" + new JSONObject(params).toString());
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.REGISTER), new JSONObject(params), listener, errlistener);
@@ -107,7 +108,7 @@ public class NetworkHelp {
         builder.append("guid").append(se).append(guid).append(sc);
         builder.append("door_ver").append(se).append(door_ver);
         LogUtils.i(TAG, "getConfig     " + NetConfig.getDomainName(DDSDK.netConfig, NetConfig.CONFIG) + builder.toString());
-        JsonObjectRequest request = new JsonObjectRequest(Method.GET, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.CONFIG)+builder.toString(), /*new JSONObject(params),*/ listener, errlistener);
+        JsonObjectRequest request = new JsonObjectRequest(Method.GET, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.CONFIG) + builder.toString(), /*new JSONObject(params),*/ listener, errlistener);
         DDVolley.addRequestQueue(request);
     }
 
@@ -173,31 +174,31 @@ public class NetworkHelp {
     public static void uploadVideoOrPicture(Context context, FileType fileType, String fileName, String fileAddress, String guid, String device_type, int operate_type, String objectkey,
                                             long time, String content, String room_id, String reason, String open_time, Response.Listener<JSONObject> listener, Response.ErrorListener errlistener) {
         try {
-         Map<String, String> params = new HashMap<>();
-         AccessToken accessToken =  TokenPrefer.loadConfig(context);
-         params.put("token", accessToken.getToken());
-         params.put("guid", guid);
-         params.put("device_type", device_type);//设备类型
-         params.put("operate_type", String.valueOf(operate_type));//开门类型
-         params.put("objectkey", objectkey);//留影图片地址
-         params.put("time", String.valueOf(time));//门禁机时间
-         params.put("content", content);//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
-         params.put("room_id", room_id);//房间 ID
-         params.put("reason", reason);//摄像头故障状态码
-         params.put("open_time", open_time);//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
-         LogUtils.i(TAG, "getRegisterDevice=======" + new JSONObject(params).toString());
-         JsonObjectRequest request = null;
-         //Constant.VIDEO_TYPE Constant.PICTURE_TYPE
-         if (fileType == FileType.PICTURE_TYPE) {//上报图片信息
-             request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.VISITLOG), new JSONObject(params), listener, errlistener);
-         } else if (fileType == FileType.VIDEO_TYPE) {//上报视频信息
-             request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.VIDEOLOG), new JSONObject(params), listener, errlistener);
-         }
-         DDVolley.addRequestQueue(request);
-     }catch (Exception e){
-         e.printStackTrace();
-         LogUtils.i(TAG, "getRegisterDevice=======" + e);
-     }
+            Map<String, String> params = new HashMap<>();
+            AccessToken accessToken = TokenPrefer.loadConfig(context);
+            params.put("token", accessToken.getToken());
+            params.put("guid", guid);
+            params.put("device_type", device_type);//设备类型
+            params.put("operate_type", String.valueOf(operate_type));//开门类型
+            params.put("objectkey", objectkey);//留影图片地址
+            params.put("time", String.valueOf(time));//门禁机时间
+            params.put("content", content);//透传字段，具体依据 operate_type 而定，值为urlencode后的字符串
+            params.put("room_id", room_id);//房间 ID
+            params.put("reason", reason);//摄像头故障状态码
+            params.put("open_time", open_time);//13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
+            LogUtils.i(TAG, "getRegisterDevice=======" + new JSONObject(params).toString());
+            JsonObjectRequest request = null;
+            //Constant.VIDEO_TYPE Constant.PICTURE_TYPE
+            if (fileType == FileType.PICTURE_TYPE) {//上报图片信息
+                request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.VISITLOG), new JSONObject(params), listener, errlistener);
+            } else if (fileType == FileType.VIDEO_TYPE) {//上报视频信息
+                request = new JsonObjectRequest(Request.Method.POST, NetConfig.postDomainName(DDSDK.netConfig, NetConfig.VIDEOLOG), new JSONObject(params), listener, errlistener);
+            }
+            DDVolley.addRequestQueue(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            LogUtils.i(TAG, "getRegisterDevice=======" + e);
+        }
     }
 
 

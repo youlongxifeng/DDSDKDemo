@@ -4,8 +4,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
+import android.text.TextUtils;
 
-import com.android.volley.VolleyError;
 import com.dd.sdk.common.NetworkState;
 import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
@@ -14,6 +15,7 @@ import com.dd.sdk.listener.DDListener;
 import com.dd.sdk.listener.FileType;
 import com.dd.sdk.listener.InstructionListener;
 import com.dd.sdk.manage.ServerCMD;
+import com.dd.sdk.net.RequestError;
 import com.dd.sdk.net.okhttp.OkHttpHelp;
 import com.dd.sdk.net.volley.DDVolley;
 import com.dd.sdk.netbean.AccessToken;
@@ -21,13 +23,14 @@ import com.dd.sdk.netbean.BaseResponse;
 import com.dd.sdk.netbean.CardInfo;
 import com.dd.sdk.netbean.DoorConfig;
 import com.dd.sdk.netbean.Floor;
+import com.dd.sdk.netbean.OpenDoorPwd;
 import com.dd.sdk.netbean.RegisterResponse;
+import com.dd.sdk.netbean.RequestOpenDoor;
 import com.dd.sdk.netbean.ResultBean;
 import com.dd.sdk.netbean.UpdoorconfigBean;
 import com.dd.sdk.service.BindServiceOperation;
 import com.dd.sdk.service.IOnCommandListener;
 import com.dd.sdk.thread.ThreadManager;
-import com.dd.sdk.tools.AppUtils;
 import com.dd.sdk.tools.GsonUtils;
 import com.dd.sdk.tools.LogUtils;
 import com.dd.sdk.tools.SPUtils;
@@ -69,6 +72,10 @@ public class DDSDK {
      * 秘钥和key
      */
     private String sdkSecretKey, sdkAccessKey;
+    /**
+     * 电话号码
+     */
+    private String mMobile;
     /**
      * 端口号和域名
      */
@@ -121,7 +128,7 @@ public class DDSDK {
     private IOnCommandListener mIOnCommandListener = new IOnCommandListener.Stub() {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {//
-            ServerCMD.setStringConect(msg, mContext, mGuid, mHandler, mInstructionListener, mConfigurationListener);
+            ServerCMD.setStringConect(msg, mContext, mGuid, mHandler, /*mInstructionListener,*/ mConfigurationListener);
         }
 
         @Override
@@ -138,20 +145,24 @@ public class DDSDK {
      * @param guid     设备id
      * @param listener 回调监听
      */
-    public void init(Context context, String app_id, String secret_key, String guid, String domainName, int port, InstructionListener listener) {
-        mContext = context;
+    public void init(@NonNull Context context, @NonNull String app_id, @NonNull String secret_key, @NonNull String guid, @NonNull String domainName, @NonNull int port, String mobile, @NonNull InstructionListener listener) {
+        this.mContext = context;
         LogUtils.init(null, true, true);
-        mInstructionListener = listener;
-        mNetworkState = new NetworkState(context);
-        netConfig = new NetConfig();
-        netConfig.setdPort(port);
-        netConfig.setDomain(domainName);
+        this.mInstructionListener = listener;
+        this.netConfig = new NetConfig();
+        this.netConfig.setdPort(port);
+        this.netConfig.setDomain(domainName);
         this.sdkSecretKey = secret_key;
         this.sdkAccessKey = app_id;
+        this.mGuid = guid;
+        this.mNetworkState = new NetworkState(context, sdkAccessKey, sdkSecretKey);
+        this.mNetworkState.tokenCheck();
+        this.mMobile = mobile;
         accessToken();
-        mBindServiceOperation = new BindServiceOperation(context, netConfig, guid, mIOnCommandListener);
-        mBindServiceOperation.bindService();
-        bucket_name = "bucket_name";
+        this.mBindServiceOperation = new BindServiceOperation(context, netConfig, guid, mIOnCommandListener);
+        this.mBindServiceOperation.bindService();
+        this.bucket_name = "bucket_name";
+        LogUtils.i("=======init=====");
     }
 
     /**
@@ -161,7 +172,7 @@ public class DDSDK {
      * @param maccessKey
      * @param msecretKey
      */
-    public void amazonCloudinit(String mendpoint, String maccessKey, String msecretKey) {
+    public void amazonCloudinit(@NonNull String mendpoint, @NonNull String maccessKey, @NonNull String msecretKey) {
         this.endpoint = mendpoint;
         this.secretKey = maccessKey;
         this.accessKey = msecretKey;
@@ -172,26 +183,20 @@ public class DDSDK {
      * 获取token
      */
     public AccessToken accessToken() {
-        DDVolley.accessToken(sdkAccessKey, sdkSecretKey, new DDListener<JSONObject, VolleyError>() {
+        DDVolley.accessToken(sdkAccessKey, sdkSecretKey, new DDListener<BaseResponse<AccessToken>, RequestError>() {
             @Override
-            public void onResponse(JSONObject object) {
-                LogUtils.i(TAG, "init onResponse  response==" + object);
-                BaseResponse<AccessToken> response = new BaseResponse<AccessToken>();
+            public void onResponse(BaseResponse<AccessToken> response) {
                 try {
-                    Type t = new TypeToken<BaseResponse<AccessToken>>() {
-                    }.getType();
-                    response = GsonUtils.getObject(object.toString(), t, response);
                     LogUtils.i(TAG, "init onResponse  response==" + response);
                     if (response.isSuccess()) {
                         accessToken = response.data;// GsonUtils.getObject(response.data.toString(), AccessToken.class);
                         TokenPrefer.saveConfig(mContext, accessToken);
-                        RegisterDevice(mContext, AppUtils.getIpAddress(mContext), "13787138669");
+                        RegisterDevice(mContext, TextUtils.isEmpty(mMobile) ? "13787138669" : mMobile);
                     } else {
                         if (mInstructionListener != null) {
                             mInstructionListener.noBinding();
                         }
                     }
-                    LogUtils.i(TAG, "baseResponse==" + response);
                 } catch (Exception e) {
                     e.printStackTrace();
                     LogUtils.i(TAG, "init onResponse  response=e=" + e);
@@ -199,7 +204,7 @@ public class DDSDK {
             }
 
             @Override
-            public void onErrorResponse(VolleyError error) {
+            public void onErrorResponse(RequestError error) {
                 LogUtils.i(TAG, "init  onErrorResponse =error=" + error);
                 if (mInstructionListener != null) {
                     mInstructionListener.tokenFile();
@@ -215,38 +220,65 @@ public class DDSDK {
      * 设备注册检查,如果没有注册则注册设备
      *
      * @param context
-     * @param macAddress
-     * @param mobile
+     * @param mobile  电话号码
      */
-    private void RegisterDevice(final Context context, final String macAddress, final String mobile) {
-        DDVolley.RegisterDevice(context, mGuid, macAddress, mobile, new DDListener<RegisterResponse, VolleyError>() {
+    private void RegisterDevice(final Context context, final String mobile) {
+        DDVolley.RegisterDevice(context, mGuid, mobile, new DDListener<RegisterResponse, RequestError>() {
             @Override
-            public void onResponse(RegisterResponse baseResponse) {
+            public void onResponse(final RegisterResponse baseResponse) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
-                // RegisterResponse baseResponse = GsonUtils.getObject(response.toString(), RegisterResponse.class);
                 switch (baseResponse.code) {
+                    case RegisterResponse.RESPONSE_SUCCESS:
+                        getConfig(context, mGuid, "5000");
+                        break;
                     case RegisterResponse.ALREADY_BOUND://20010	设备已绑定
                         getConfig(context, mGuid, "5000");
                         return;
                     case RegisterResponse.REGISTER_FAIL://20011	设备注册失败
-                        RegisterDevice(context, macAddress, mobile);//注册失败重新注册
+                        RegisterDevice(context, mobile);//注册失败重新注册
                         break;
-                    case RegisterResponse.ALREADY_REGISTERED://20012设备已注册
-
+                    case RegisterResponse.ALREADY_REGISTERED://20012设备已注册,但是设备未绑定
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (mInstructionListener != null) {
+                                    mInstructionListener.noBinding();
+                                }
+                            }
+                        });
                         break;
                     case RegisterResponse.TOKEN_EXPIRED://token过期
                         AccessToken accessToken = accessToken();
                         if (accessToken != null) {
-                            RegisterDevice(context, macAddress, mobile);
+                            RegisterDevice(context, mobile);
                         }
 
                         return;
+                    default:
+                        break;
                 }
+
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.responseRegister(baseResponse);
+                        }
+                    }
+                });
             }
 
             @Override
-            public void onErrorResponse(VolleyError volleyError) {
+            public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + volleyError);
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.failRegister(volleyError);
+                        }
+                    }
+                });
             }
         });
 
@@ -260,9 +292,9 @@ public class DDSDK {
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
     public void getConfig(final Context context, final String guid, final String door_ver) {
-        DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, VolleyError>() {
+        DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, RequestError>() {
             @Override
-            public void onResponse(BaseResponse<DoorConfig> response) {
+            public void onResponse(final BaseResponse<DoorConfig> response) {
                 if (response != null) {
                     switch (response.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
@@ -298,15 +330,27 @@ public class DDSDK {
                                 getConfig(context, guid, door_ver);
                             }
                             break;
+                        default:
+                            return;
                     }
-                } else {
-                    //需要做后续处理
                 }
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mInstructionListener.getconfigResponse(response);//设备未绑定，需要重新绑定
+                    }
+                });
             }
 
             @Override
-            public void onErrorResponse(VolleyError volleyError) {
+            public void onErrorResponse(final RequestError volleyError) {
                 LogUtils.i("EEE", "getConfig error==" + volleyError);
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mInstructionListener.getconfigFail(volleyError);//设备未绑定，需要重新绑定
+                    }
+                });
             }
         });
 
@@ -321,19 +365,36 @@ public class DDSDK {
      */
     public ResultBean postDeviceConfig(String guid, UpdoorconfigBean config) {
         final ResultBean resultBean = new ResultBean();
-        DDVolley.postConfig(mContext, guid, config, new DDListener<JSONObject, VolleyError>() {
+        DDVolley.postConfig(mContext, guid, config, new DDListener<JSONObject, RequestError>() {
             @Override
-            public void onResponse(JSONObject response) {
+            public void onResponse(final JSONObject response) {
                 LogUtils.i("postDeviceConfig   response=" + response);
                 resultBean.setErrCode(200);
                 resultBean.setErrMsg("信息上报成功");
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.postDeviceConfigResponse(response);
+                        }
+                    }
+                });
+
             }
 
             @Override
-            public void onErrorResponse(VolleyError volleyError) {
-                LogUtils.i("postDeviceConfig   error=" + volleyError.getMessage());
+            public void onErrorResponse(final RequestError volleyError) {
                 resultBean.setErrCode(-1);
                 resultBean.setErrMsg("信息上报失败");
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.postDeviceConfigFail(volleyError);
+                        }
+                    }
+                });
+
             }
         });
         return resultBean;
@@ -351,7 +412,11 @@ public class DDSDK {
         if (mBindServiceOperation != null) {
             mBindServiceOperation.unbindService();
         }
+        DDVolley.stop();
+        if (mHandler != null) {
 
+            mHandler.removeCallbacksAndMessages(null);
+        }
         // compositeDisposable.clear();
     }
 
@@ -363,23 +428,20 @@ public class DDSDK {
      * @param curid 当前操作步数
      */
     public List<CardInfo<Floor>> getCardInfo(final Context context, final String guid, final int curid) {
-        DDVolley.getCardInfo(context, guid, curid, new DDListener<JSONObject, VolleyError>() {
+        DDVolley.getCardInfo(context, guid, curid, new DDListener<BaseResponse<CardInfo<Floor>>, RequestError>() {
             @Override
-            public void onResponse(JSONObject response) {
-                BaseResponse<CardInfo<Floor>> cardinfo = new BaseResponse<>();
-                Type t = new TypeToken<BaseResponse<CardInfo<Floor>>>() {
-                }.getType();
-                BaseResponse<CardInfo<Floor>> response1 = GsonUtils.getObject(response.toString(), t, cardinfo);
-                if (response1 != null) {
-                    switch (response1.code) {
+            public void onResponse(final BaseResponse<CardInfo<Floor>> response) {
+                if (response != null) {
+                    switch (response.code) {
                         case RegisterResponse.RESPONSE_SUCCESS://返回成功
-                            CardInfo deviceConfig = response1.getData();
-                            checkDeviceConfig(context, guid, curid, deviceConfig);
+                            CardInfo deviceConfig = response.getData();
+                            checkFinishData(context, guid, curid, deviceConfig);
                             return;
                         case RegisterResponse.NO_REGISTER://20011	设备未注册
 
                             break;
                         case RegisterResponse.NO_BOUND://20012设备w未绑定
+
                             break;
                         case RegisterResponse.TOKEN_EXPIRED://token过期
                             AccessToken accessToken = accessToken();
@@ -391,10 +453,27 @@ public class DDSDK {
                 } else {
                     //需要做后续处理
                 }
+
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.getBlackAndWhiteSuccess(response);
+                        }
+                    }
+                });
             }
 
             @Override
-            public void onErrorResponse(VolleyError volleyError) {
+            public void onErrorResponse(final RequestError volleyError) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mInstructionListener != null) {
+                            mInstructionListener.getBlackAndWhiteListFail(volleyError);
+                        }
+                    }
+                });
 
             }
         });
@@ -409,11 +488,12 @@ public class DDSDK {
      * @param curid
      * @param deviceConfig
      */
-    private void checkDeviceConfig(final Context context, final String guid, final int curid, final CardInfo deviceConfig) {
+    private void checkFinishData(final Context context, final String guid, final int curid, final CardInfo deviceConfig) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 List<CardInfo<Floor>> cardInfos = deviceConfig.getInfo();
+                deviceConfig.isAll();//是否全量获取
                 ResultBean resultBean = mInstructionListener.getBlackAndWhiteList(cardInfos);//上报到上层应用处理数据
                 if (resultBean.isSuccess()) {//上层APP数据处理成功
                     if (deviceConfig != null && deviceConfig.count() == 500) {//约定每次最大返回500条
@@ -456,23 +536,69 @@ public class DDSDK {
             bucket_name = SPUtils.get("bucket_name", bucket_name);
             OkHttpHelp.putBucketObject(bucket_name, fileName, fileAddress);//提交文件到亚马逊云
             DDVolley.uploadVideoOrPicture(DDSDK.getInstance().getContext(), fileType, fileName, fileAddress, guid, device_type, operate_type, objectkey, time,
-                    content, room_id, reason, open_time, new DDListener<JSONObject, VolleyError>() {
+                    content, room_id, reason, open_time, new DDListener<JSONObject, RequestError>() {
                         @Override
-                        public void onResponse(JSONObject object) {
+                        public void onResponse(final JSONObject object) {
                             BaseResponse cardinfo = new BaseResponse();
                             Type t = new TypeToken<BaseResponse>() {
                             }.getType();
                             BaseResponse response1 = GsonUtils.getObject(object.toString(), t, cardinfo);
-                            if (response1 != null && response1.isSuccess()) {
-                                mRequestState = true;
-                            } else {
-                                mRequestState = false;
+                            if (response1 != null) {
+                                switch (response1.code) {
+                                    case RegisterResponse.RESPONSE_SUCCESS://返回成功
+                                        mRequestState = true;
+                                    case RegisterResponse.NO_REGISTER://20011	设备未注册
+                                        if (mInstructionListener != null) {
+                                            mHandler.post(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    mInstructionListener.noRegister();//设备未绑定，需要重新注册
+                                                }
+                                            });
+
+                                        }
+                                        mRequestState = false;
+                                        break;
+                                    case RegisterResponse.NO_BOUND://20012设备w未绑定
+                                        if (mInstructionListener != null) {
+                                            mHandler.post(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    mInstructionListener.noBinding();//设备未绑定，需要重新绑定
+                                                }
+                                            });
+                                        }
+                                        mRequestState = false;
+                                        break;
+                                    case RegisterResponse.TOKEN_EXPIRED://token过期
+                                        AccessToken accessToken = accessToken();
+                                        mRequestState = false;
+                                        break;
+                                }
+
                             }
+
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mInstructionListener != null) {
+                                        mInstructionListener.postDeviceConfigResponse(object);
+                                    }
+                                }
+                            });
                         }
 
                         @Override
-                        public void onErrorResponse(VolleyError volleyError) {
+                        public void onErrorResponse(final RequestError volleyError) {
                             mRequestState = false;
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mInstructionListener != null) {
+                                        mInstructionListener.postDeviceConfigFail(volleyError);
+                                    }
+                                }
+                            });
                         }
                     });
         } catch (Exception e) {
@@ -504,6 +630,36 @@ public class DDSDK {
         @Override
         public void getCardInfoCmd(Context context, String gruid, int curid) {
             getCardInfo(context, gruid, curid);
+        }
+
+        @Override
+        public void getNetworkCipher(OpenDoorPwd pwd) {
+            if (mInstructionListener != null) {
+                mInstructionListener.getNetworkCipher(pwd);
+            }
+        }
+
+        @Override
+        public void openDoor(RequestOpenDoor openDoor) {
+            if (mInstructionListener != null) {
+                mInstructionListener.openDoor(openDoor);
+            }
+        }
+
+        @Override
+        public ResultBean reBoot() {
+            if (mInstructionListener != null) {
+                return mInstructionListener.reBoot();
+            }
+            return null;
+        }
+
+        @Override
+        public int nameListCurid() {
+            if (mInstructionListener != null) {
+                return mInstructionListener.nameListCurid();
+            }
+            return 0;
         }
     };
 

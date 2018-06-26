@@ -2,6 +2,10 @@ package com.dd.sdk.listener;
 
 import android.content.Context;
 
+import com.dd.sdk.netbean.OpenDoorPwd;
+import com.dd.sdk.netbean.RequestOpenDoor;
+import com.dd.sdk.netbean.ResultBean;
+
 /**
  * @author Administrator
  * @name DDSDKDemo
@@ -29,4 +33,26 @@ public interface ConfigurationListener {
      * @param curid 当前操作步数,当前数据库最后一位
      */
     void getCardInfoCmd(Context context, String gruid,int curid);
+
+
+    /**
+     * 网络密码指令    处理密码指令，并上报给应用层，等待应用层返回接收结果，回包给ddconnector
+     */
+    void getNetworkCipher(OpenDoorPwd pwd);
+
+
+    /**
+     * 开门指令   处理开门指令，并上报给应用层，等待应用层返回处理结果，回包给ddconnector
+     */
+    void openDoor(RequestOpenDoor openDoor);
+
+    /**
+     * 重启指令 处理配置更新指令，上报给应用层，告知可重启
+     */
+    ResultBean reBoot();
+
+    /**
+     * 获取当前黑白名单curid当前操作步数，也就是本地数据库存储的黑白名单位数
+     */
+    int nameListCurid();
 }
