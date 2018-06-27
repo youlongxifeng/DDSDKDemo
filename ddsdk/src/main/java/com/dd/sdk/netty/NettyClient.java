@@ -75,8 +75,8 @@ public class NettyClient {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
                     socketChannel.pipeline().addLast(new IdleStateHandler(20, 10, 0));
-                    socketChannel.pipeline().addLast(new StringEncoder(Charset.forName("UTF-8")));
-                    socketChannel.pipeline().addLast(new StringDecoder(Charset.forName("UTF-8")));
+                    socketChannel.pipeline().addLast(new StringEncoder(Charset.forName("UTF-8")));//编码
+                    socketChannel.pipeline().addLast(new StringDecoder(Charset.forName("UTF-8")));//解码
                     socketChannel.pipeline().addLast(new NettyClientHandler(mGuid, listener));
 
                   /*  SslContext sslCtx = SslContextBuilder.forClient()

@@ -40,7 +40,7 @@ public class MainService extends Service implements NettyListener, Callback {
     public final static String CONFIG_BEAN = "config_bean";
     public final static String PACKAGE_NAME = "package_name";
     public final static String GUID_NAME = "guid_name";
-    private boolean isbind=false;
+    private boolean isbind = false;
     CopyOnWriteArrayList<String> copyOnWriteArrayList = new CopyOnWriteArrayList<>();
     ListenerManagerImpl mListenerManager;
     NettyClient mNettyClient;
@@ -59,16 +59,16 @@ public class MainService extends Service implements NettyListener, Callback {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-      if (mNettyClient != null) {
+        if (mNettyClient != null) {
             mNettyClient.close();
             mNettyClient = null;
         }
         Bundle bundle = intent.getExtras();
         NetConfig netConfig = (NetConfig) bundle.getSerializable(NetConfig.CONFIG_BEAN);
         mPacageName = bundle.getString(MainService.PACKAGE_NAME);
-        mGuid=bundle.getString(MainService.GUID_NAME);
+        mGuid = bundle.getString(MainService.GUID_NAME);
         if (netConfig != null) {
-            mNettyClient = new NettyClient(this, netConfig.getdPort(), netConfig.getDomain(),mGuid);
+            mNettyClient = new NettyClient(this, netConfig.getdPort(), netConfig.getDomain(), mGuid);
             mNettyClient.connect();
         } else {
 
@@ -78,8 +78,8 @@ public class MainService extends Service implements NettyListener, Callback {
         mHandlerThread.start();
         mMainHandler = new Handler(mHandlerThread.getLooper(), this);
         mMainHandler.sendEmptyMessage(QUERY_PROCESS_SURVIVING);
-        isbind=true;
-        Log.i(TAG, "======onBind=====netConfig="  );
+        isbind = true;
+        Log.i(TAG, "======onBind=====netConfig=");
         return (IBinder) mBundle;
     }
 
@@ -90,12 +90,10 @@ public class MainService extends Service implements NettyListener, Callback {
         return super.onStartCommand(intent, flags, startId);
     }
 
-   @Override
+    @Override
     public void onMessageResponse(Object msg) {
         try {
-
             mBundle.onMessageResponse((String) msg);
-
         } catch (RemoteException e) {
             e.printStackTrace();
 
@@ -104,14 +102,12 @@ public class MainService extends Service implements NettyListener, Callback {
 
     @Override
     public void onServiceStatusConnectChanged(int statusCode) {
-
         try {
             Log.i(TAG, "======onMessageResponse=====statusCode=" + statusCode);
-            if(isbind){
+            if (isbind) {
                 mBundle.onServiceStatusConnectChanged(statusCode);
                 mNettyClient.reconnect();
             }
-
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -120,7 +116,7 @@ public class MainService extends Service implements NettyListener, Callback {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "======ononUnbind======");
-        isbind=false;
+        isbind = false;
         return super.onUnbind(intent);
     }
 
@@ -128,7 +124,7 @@ public class MainService extends Service implements NettyListener, Callback {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "======onDestroy======");
-        if(mNettyClient!=null){
+        if (mNettyClient != null) {
             mNettyClient.close();
         }
     }
@@ -138,13 +134,13 @@ public class MainService extends Service implements NettyListener, Callback {
         @Override
         public void onMessageResponse(String msg) throws RemoteException {
             mListenerManager.onMessageResponse(msg);
-            LogUtils.i(TAG, "onMessageResponse================"+msg);
+            LogUtils.i(TAG, "onMessageResponse================" + msg);
         }
 
         @Override
         public void onServiceStatusConnectChanged(int statusCode) throws RemoteException {
             mListenerManager.onServiceStatusConnectChanged(statusCode);
-            LogUtils.i(TAG, "onServiceStatusConnectChanged================"+statusCode);
+            LogUtils.i(TAG, "onServiceStatusConnectChanged================" + statusCode);
         }
 
         @Override
@@ -183,7 +179,7 @@ public class MainService extends Service implements NettyListener, Callback {
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
             case QUERY_PROCESS_SURVIVING:
-               // querySpecailPIDRunningAppInfo();
+                // querySpecailPIDRunningAppInfo();
                 break;
             default:
                 break;

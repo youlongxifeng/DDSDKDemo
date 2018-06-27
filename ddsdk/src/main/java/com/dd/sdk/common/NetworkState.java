@@ -55,7 +55,6 @@ public class NetworkState implements Runnable {
 
             @Override
             public void run() {
-                LogUtils.i(TAG, "init onResponse  mSdkAccessKey==" + mSdkAccessKey + "  mSdkSecretKey=" + mSdkSecretKey);
                 DDVolley.accessToken(mSdkAccessKey, mSdkSecretKey, new DDListener<BaseResponse<AccessToken>, RequestError>() {
                     @Override
                     public void onResponse(BaseResponse<AccessToken> object) {

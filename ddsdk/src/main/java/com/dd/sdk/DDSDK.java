@@ -7,6 +7,7 @@ import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import com.dd.sdk.base.BaseSDK;
 import com.dd.sdk.common.NetworkState;
 import com.dd.sdk.common.TokenPrefer;
 import com.dd.sdk.config.NetConfig;
@@ -46,7 +47,7 @@ import java.util.List;
  * @class describe
  */
 
-public class DDSDK {
+public class DDSDK implements BaseSDK {
     private final static String TAG = DDSDK.class.getSimpleName();
     private final static int TOKEN_REGISTER = 1;
     private final static int TOKEN_GET_CONFIG = 2;
@@ -130,16 +131,19 @@ public class DDSDK {
             // LogUtils.i(TAG, "onServiceStatusConnectChanged  statusCode=" + statusCode);
         }
     };
-
     /**
-     * 先写到一块儿，等会儿要分开
      *
-     * @param context  应用
-     * @param app_id   APP秘钥
-     * @param guid     设备id
+     * @param context 应用
+     * @param access_key APP秘钥
+     * @param secret_key  APPkey
+     * @param guid 设备id
+     * @param domainName 域名
+     * @param port 端口号
+     * @param mobile 电话号码
      * @param listener 回调监听
      */
-    public void init(@NonNull Context context, @NonNull String app_id, @NonNull String secret_key, @NonNull String guid, @NonNull String domainName, @NonNull int port, String mobile, @NonNull InstructionListener listener) {
+    @Override
+    public void init(@NonNull Context context, @NonNull String access_key, @NonNull String secret_key, @NonNull String guid, @NonNull String domainName, @NonNull int port, String mobile, @NonNull InstructionListener listener) {
         this.mContext = context;
         LogUtils.init(null, true, true);
         this.mInstructionListener = listener;
@@ -147,7 +151,7 @@ public class DDSDK {
         this.netConfig.setdPort(port);
         this.netConfig.setDomain(domainName);
         this.sdkSecretKey = secret_key;
-        this.sdkAccessKey = app_id;
+        this.sdkAccessKey = access_key;
         this.mGuid = guid;
         this.mNetworkState = new NetworkState(context, sdkAccessKey, sdkSecretKey);
         this.mNetworkState.tokenCheck();
@@ -160,10 +164,11 @@ public class DDSDK {
     /**
      * 初始化亚马逊密码和域名以及key
      *
-     * @param mendpoint
-     * @param maccessKey
-     * @param msecretKey
+     * @param mendpoint 域名端口号
+     * @param maccessKey APPkey
+     * @param msecretKey APP秘钥
      */
+    @Override
     public void amazonCloudinit(@NonNull String mendpoint, @NonNull String maccessKey, @NonNull String msecretKey) {
         this.endpoint = mendpoint;
         this.secretKey = msecretKey;
@@ -174,6 +179,7 @@ public class DDSDK {
     /**
      * 获取token
      */
+    @Override
     public AccessToken accessToken() {
         DDVolley.accessToken(sdkAccessKey, sdkSecretKey, new DDListener<BaseResponse<AccessToken>, RequestError>() {
             @Override
@@ -211,10 +217,11 @@ public class DDSDK {
      * @param context
      * @param mobile  电话号码
      */
-    private void RegisterDevice(final Context context, final String mobile) {
+    @Override
+    public void RegisterDevice(final Context context, final String mobile) {
         DDVolley.RegisterDevice(context, mGuid, mobile, new DDListener<BaseResponse, RequestError>() {
             @Override
-            public void onResponse(final BaseResponse baseResponse) {
+            public void onResponse( BaseResponse baseResponse) {
                 LogUtils.i(TAG, "RegisterDevice    response=" + baseResponse);
                 switch (baseResponse.code) {
                     case RegisterResponse.RESPONSE_SUCCESS:
@@ -257,6 +264,7 @@ public class DDSDK {
      * @param guid     设备唯一标识符
      * @param door_ver 5000 以下代表 door5 以下版本，5000-5999 代表 door5 版本，默认值：0
      */
+    @Override
     public void getConfig(final Context context, final String guid, final String door_ver) {
         DDVolley.getConfig(context, guid, door_ver, new DDListener<BaseResponse<DoorConfig>, RequestError>() {
             @Override
@@ -305,6 +313,7 @@ public class DDSDK {
      * @param guid   设备唯一标识符
      * @param config json对象	配置内容
      */
+    @Override
     public ResultBean postDeviceConfig(String guid, UpdoorconfigBean config) {
         final ResultBean resultBean = new ResultBean();
         DDVolley.postConfig(mContext, guid, config, new DDListener<BaseResponse, RequestError>() {
@@ -335,6 +344,7 @@ public class DDSDK {
      * @param guid  设备唯一标识符
      * @param curid 当前操作步数
      */
+    @Override
     public List<CardInfo<Floor>> getCardInfo(final Context context, final String guid, final int curid) {
         DDVolley.getCardInfo(context, guid, curid, new DDListener<BaseResponse<CardInfo<Floor>>, RequestError>() {
             @Override
@@ -376,7 +386,8 @@ public class DDSDK {
      * @param curid
      * @param deviceConfig
      */
-    private void checkFinishData(final Context context, final String guid, final int curid, final CardInfo deviceConfig) {
+    @Override
+    public void checkFinishData(final Context context, final String guid, final int curid, final CardInfo deviceConfig) {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -415,8 +426,8 @@ public class DDSDK {
      * @param open_time    可选 13 位 Unix 时间戳，精确到毫秒级，一次开门的视频留影和图片留影应用同一个时间
      * @return 上传成功返回true，失败返回false 请重传一次
      */
-    static boolean mRequestState;
-
+      boolean mRequestState;
+    @Override
     public boolean uploadVideoOrPicture(final FileType fileType, final String fileName, final String fileAddress, final String guid, final String device_type, final int operate_type, final String objectkey, final long time,
                                         final String content, final String room_id, final String reason, final String open_time) {
         mRequestState = false;
@@ -468,6 +479,7 @@ public class DDSDK {
      * @param password 开门密码
      * @param //       开门状态回调
      */
+    @Override
     public ResultBean pWOpenDoor(int password/*, OpenDoorListener listener*/) {
         return new ResultBean();
     }
@@ -681,9 +693,12 @@ public class DDSDK {
         }
         DDVolley.stop();
         if (mHandler != null) {
-
             mHandler.removeCallbacksAndMessages(null);
         }
+        if(mContext!=null){
+            mContext=null;
+        }
+
         // compositeDisposable.clear();
     }
 
